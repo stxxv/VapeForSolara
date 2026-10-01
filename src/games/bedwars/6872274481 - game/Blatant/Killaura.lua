@@ -189,7 +189,7 @@ run(function()
 									store.attackReachUpdate = tick() + 1
 
 									if tick() - AttackDelay > CurrentDelay then
-										AttackDelay = tick() + calcHitreg(meta)
+										AttackDelay = tick() + math.clamp(math.min(calcHitreg(meta) / 4, 1 / 30), 1 / 60, 0.1)
 
 										AttackRemote:FireServer({
 											weapon = sword.tool,
