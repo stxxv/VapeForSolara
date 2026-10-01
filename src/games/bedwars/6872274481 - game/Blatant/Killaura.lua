@@ -61,8 +61,8 @@ run(function()
 			return 0.3
 		end
 
-		CurrentDelay = math.clamp(math.min(math.clamp(math.clamp(meta.sword.attackSpeed - math.min(math.clamp(lplr:GetNetworkPing(), 0, 1) * 0.5, meta.sword.attackSpeed * 0.35), 0.05, 2) + 16.67, 0.05, 2) / 4, 1 / 30), 1 / 60, 0.1)
-		return CurrentDelay
+		local raw = math.clamp(meta.sword.attackSpeed - math.min(math.clamp(lplr:GetNetworkPing(), 0, 1) * 0.5, meta.sword.attackSpeed * 0.35), 0.05, 2)
+		return math.clamp(raw, 0.05, 2)
 	end
 
 	Killaura = vape.Categories.Blatant:CreateModule({
@@ -188,8 +188,10 @@ run(function()
 									store.attackReach = (delta.Magnitude * 100) // 1 / 100
 									store.attackReachUpdate = tick() + 1
 
+									print(AttackDelay, CurrentDelay, tick())
 									if tick() - AttackDelay > CurrentDelay then
-										AttackDelay = tick() + calcHitreg(meta)
+										AttackDelay = tick() + math.clamp(math.min(calcHitreg(meta) / 4, 1 / 30), 1 / 60, 0.1)
+										CurrentDelay = math.clamp(math.min(calcHitreg(meta) / 4, 1 / 30), 1 / 60, 0.1)
 
 										AttackRemote:FireServer({
 											weapon = sword.tool,
