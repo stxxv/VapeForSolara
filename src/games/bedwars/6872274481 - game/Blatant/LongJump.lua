@@ -88,7 +88,7 @@ local LongJumpMethods = {
 	grappling_hook = function(item, pos, dir)
 		launchProjectile(item, pos, 'grappling_hook_projectile', 140, dir)
 	end,
-	jade_hammer = function(item, _, dir)
+	jade_hammer = function(item, pos, dir)
 		local hammer = (item.itemType:find('jade_hammer') and 'jade_hammer') or item.itemType
 		if not bedwars.AbilityController:canUseAbility(hammer..'_jump') then
 			repeat task.wait() until bedwars.AbilityController:canUseAbility(hammer..'_jump') or not LongJump.Enabled
@@ -101,7 +101,7 @@ local LongJumpMethods = {
 
 			task.wait(.1)
 			bedwars.AbilityController:useAbility(hammer..'_jump')
-			
+
 			JumpSpeed = 1.4 * Value.Value
 			JumpTick = tick() + 2.5
 			Direction = Vector3.new(dir.X, 0, dir.Z).Unit
