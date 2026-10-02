@@ -89,12 +89,13 @@ local LongJumpMethods = {
 		launchProjectile(item, pos, 'grappling_hook_projectile', 140, dir)
 	end,
 	jade_hammer = function(item, _, dir)
-		if not bedwars.AbilityController:canUseAbility(item.itemType..'_jump') then
-			repeat task.wait() until bedwars.AbilityController:canUseAbility(item.itemType..'_jump') or not LongJump.Enabled
+		local hammer = (item.itemType:find('jade_hammmer') and 'jade_hammer') or item.itemType
+		if not bedwars.AbilityController:canUseAbility(hammer..'_jump') then
+			repeat task.wait() until bedwars.AbilityController:canUseAbility(hammer..'_jump') or not LongJump.Enabled
 		end
 
-		if bedwars.AbilityController:canUseAbility(item.itemType..'_jump') and LongJump.Enabled then
-			bedwars.AbilityController:useAbility(item.itemType..'_jump')
+		if bedwars.AbilityController:canUseAbility(hammer..'_jump') and LongJump.Enabled then
+			bedwars.AbilityController:useAbility(hammer..'_jump')
 			JumpSpeed = 1.4 * Value.Value
 			JumpTick = tick() + 2.5
 			Direction = Vector3.new(dir.X, 0, dir.Z).Unit
@@ -195,7 +196,7 @@ LongJump = vape.Categories.Blatant:CreateModule({
 			end
 
 			for i, v in LongJumpMethods do
-				local item = getItem(i)
+				local item = getItem(i, nil, true)
 				if item or store.equippedKit == i then
 					task.spawn(v, item, start, (CameraDir.Enabled and gameCamera or entitylib.character.RootPart).CFrame.LookVector)
 					break
