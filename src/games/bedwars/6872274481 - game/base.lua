@@ -857,6 +857,10 @@ run(function()
 		return OldBreak(self, breakTable, plr)
 	end
 
+	bedwars.SoundManager.playSound = function(self, ...)
+		return self:playAudio(...)
+	end
+
 	local cache, blockhealthbar = {}, {blockHealth = -1, breakingBlockPosition = Vector3.zero}
 	store.blockPlacer = bedwars.BlockPlacer.new(bedwars.BlockEngine, 'wool_white')
 
