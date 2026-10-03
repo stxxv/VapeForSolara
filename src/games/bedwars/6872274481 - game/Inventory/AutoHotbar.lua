@@ -180,12 +180,12 @@ local function CreateWindow(self)
 	windowlist.CellSize = UDim2.fromOffset(51, 52)
 	windowlist.CellPadding = UDim2.fromOffset(4, 3)
 	windowlist.Parent = children
-	windowlist:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
+	vape:Clean(windowlist:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
 		if vape.ThreadFix then
 			setthreadidentity(8)
 		end
 		children.CanvasSize = UDim2.fromOffset(0, windowlist.AbsoluteContentSize.Y / vape.guiscale.Scale)
-	end)
+	end))
 	table.insert(vape.Windows, window)
 
 	local function createitem(id, image)
@@ -242,9 +242,9 @@ local function CreateWindow(self)
 		end
 	end
 
-	search:GetPropertyChangedSignal('Text'):Connect(function()
+	vape:Clean(search:GetPropertyChangedSignal('Text'):Connect(function()
 		indexSearch(search.Text)
-	end)
+	end))
 	indexSearch('')
 
 	return window
@@ -315,12 +315,12 @@ vape.Components.HotbarList = function(optionsettings, children, api)
 	windowlist.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	windowlist.Padding = UDim.new(0, 3)
 	windowlist.Parent = childrenlist
-	windowlist:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
+	vape:Clean(windowlist:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
 		if vape.ThreadFix then
 			setthreadidentity(8)
 		end
 		hotbarlist.Size = UDim2.fromOffset(220, math.min(43 + windowlist.AbsoluteContentSize.Y / vape.guiscale.Scale, 603))
-	end)
+	end))
 	textbutton.MouseButton1Click:Connect(function()
 		optionapi:AddHotbar()
 	end)

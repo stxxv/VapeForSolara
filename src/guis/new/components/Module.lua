@@ -205,7 +205,7 @@ for index, comp in components do
 	end
 end
 
-button.MouseEnter:Connect(function()
+component:Clean(button.MouseEnter:Connect(function()
 	isHover = true
 	if not component.Enabled and not modulechildren.Visible then
 		button.TextColor3 = uipallet.Text
@@ -213,9 +213,9 @@ button.MouseEnter:Connect(function()
 	end
 
 	component.Bind:SetVisible(isHover or modulechildren.Visible)
-end)
+end))
 
-button.MouseLeave:Connect(function()
+component:Clean(button.MouseLeave:Connect(function()
 	isHover = false
 	if not component.Enabled and not modulechildren.Visible then
 		button.TextColor3 = color.Dark(uipallet.Text, 0.16)
@@ -223,58 +223,58 @@ button.MouseLeave:Connect(function()
 	end
 
 	component.Bind:SetVisible(isHover or modulechildren.Visible)
-end)
+end))
 
-button.MouseButton1Click:Connect(function()
+component:Clean(button.MouseButton1Click:Connect(function()
 	if vape.EditGUI then
 		return
 	end
 
 	component:Toggle()
-end)
+end))
 
-button.MouseButton2Click:Connect(function()
+component:Clean(button.MouseButton2Click:Connect(function()
 	modulechildren.Visible = not modulechildren.Visible
-end)
+end))
 
-dotsbutton.MouseButton1Click:Connect(function()
+component:Clean(dotsbutton.MouseButton1Click:Connect(function()
 	modulechildren.Visible = not modulechildren.Visible
-end)
+end))
 
-dotsbutton.MouseButton2Click:Connect(function()
+component:Clean(dotsbutton.MouseButton2Click:Connect(function()
 	modulechildren.Visible = not modulechildren.Visible
-end)
+end))
 
-dotsbutton.MouseEnter:Connect(function()
+component:Clean(dotsbutton.MouseEnter:Connect(function()
 	if not component.Enabled then
 		dots.ImageColor3 = uipallet.Text
 	end
-end)
+end))
 
-dotsbutton.MouseLeave:Connect(function()
+component:Clean(dotsbutton.MouseLeave:Connect(function()
 	if not component.Enabled then
 		dots.ImageColor3 = color.Light(uipallet.Main, 0.37)
 	end
-end)
+end))
 
-edit.MouseButton1Click:Connect(function()
+component:Clean(edit.MouseButton1Click:Connect(function()
 	component:SetVisible(not component.Visible)
-end)
+end))
 
-windowlist:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
+component:Clean(windowlist:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
 	if vape.ThreadFix then
 		setthreadidentity(8)
 	end
 
 	modulechildren.Size = UDim2.new(1, 0, 0, windowlist.AbsoluteContentSize.Y / scale.Scale)
-end)
+end))
 
 local bind = component:CreateBind({
 	Module = true,
 	Cover = true
 })
 
-bind.Triggered:Connect(function(isDown)
+component:Clean(bind.Triggered:Connect(function(isDown)
 	if bind.Hold then
 		if component.Enabled ~= isDown then
 			if vape.ToggleNotifications.Enabled then
@@ -290,12 +290,12 @@ bind.Triggered:Connect(function(isDown)
 
 		component:Toggle(true)
 	end
-end)
+end))
 
 if inputService.TouchEnabled then
 	local isHeld = false
 
-	button.MouseButton1Down:Connect(function()
+	component:Clean(button.MouseButton1Down:Connect(function()
 		isHeld = true
 		local holdtime, holdPos = os.clock(), inputService:GetMouseLocation()
 		repeat
@@ -318,7 +318,7 @@ if inputService.TouchEnabled then
 			end
 
 			local connection
-			connection = inputService.InputBegan:Connect(function(input)
+			connection = component:Clean(inputService.InputBegan:Connect(function(input)
 				if input.UserInputType == Enum.UserInputType.Touch then
 					if vape.ThreadFix then
 						setthreadidentity(8)
@@ -336,13 +336,13 @@ if inputService.TouchEnabled then
 
 					connection:Disconnect()
 				end
-			end)
+			end))
 		end
-	end)
+	end))
 
-	button.MouseButton1Up:Connect(function()
+	component:Clean(button.MouseButton1Up:Connect(function()
 		isHeld = false
-	end)
+	end))
 end
 
 vape.Modules[props.Name] = component

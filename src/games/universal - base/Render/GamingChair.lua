@@ -163,7 +163,7 @@ GamingChair = vape.Categories.Render:CreateModule({
 							tween = tweenService:Create(chairlegs, TweenInfo.new(0.15), {
 								Size = Vector3.zero
 							})
-							tween.Completed:Connect(function(state)
+							GamingChair:Clean(tween.Completed:Connect(function(state)
 								if state == Enum.PlaybackState.Completed then
 									chairfan.Transparency = 0
 									chairlegs.Transparency = 1
@@ -172,7 +172,7 @@ GamingChair = vape.Categories.Render:CreateModule({
 									})
 									tween:Play()
 								end
-							end)
+							end))
 							tween:Play()
 						else
 							if flyingsound.IsPlaying then
@@ -191,7 +191,7 @@ GamingChair = vape.Categories.Render:CreateModule({
 								Size = Vector3.zero
 							})
 
-							tween.Completed:Connect(function(state)
+							GamingChair:Clean(tween.Completed:Connect(function(state)
 								if state == Enum.PlaybackState.Completed then
 									chairfan.Transparency = 1
 									chairlegs.Transparency = 0
@@ -200,7 +200,7 @@ GamingChair = vape.Categories.Render:CreateModule({
 									})
 									tween:Play()
 								end
-							end)
+							end))
 
 							tween:Play()
 						end

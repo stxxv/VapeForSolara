@@ -539,10 +539,16 @@ do
 			end
 		end
 
+		if self.Socket then
+			pcall(function()
+				self.Socket:Close()
+			end)
+		end
+
 		self.Socket = WebSocket.connect('wss://'..self.Dealer.Dealer..'/?access_token='..self.Data.accessToken)
 		self.syncTime = os.clock() - 6
 
-		self.Socket.OnMessage:Connect(function(payload)
+		self.msgConn = self.Socket.OnMessage:Connect(function(payload)
 			payload = httpService:JSONDecode(payload)
 
 			if payload.headers and payload.headers['Spotify-Connection-Id'] then
@@ -560,11 +566,14 @@ do
 			end
 		end)
 
-		self.Socket.OnClose:Connect(function()
+		self.closeConn = self.Socket.OnClose:Connect(function()
 			self.connectionId = nil
 			self.syncTime = nil
 			self.Socket = nil
 		end)
+
+		Spotify:Clean(self.msgConn)
+		Spotify:Clean(self.closeConn)
 	end
 
 	function SpotifyHandler:Start()

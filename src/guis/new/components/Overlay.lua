@@ -199,35 +199,35 @@ vape:Clean(clickgui:GetPropertyChangedSignal('Visible'):Connect(function()
 	component:Update()
 end))
 
-dotsbutton.MouseEnter:Connect(function()
+component:Clean(dotsbutton.MouseEnter:Connect(function()
 	if not children.Visible then
 		dots.ImageColor3 = uipallet.Text
 	end
-end)
+end))
 
-dotsbutton.MouseLeave:Connect(function()
+component:Clean(dotsbutton.MouseLeave:Connect(function()
 	if not children.Visible then
 		dots.ImageColor3 = color.Light(uipallet.Main, 0.37)
 	end
-end)
+end))
 
-dotsbutton.MouseButton1Click:Connect(function()
+component:Clean(dotsbutton.MouseButton1Click:Connect(function()
 	component:Expand(true)
-end)
+end))
 
-dotsbutton.MouseButton2Click:Connect(function()
+component:Clean(dotsbutton.MouseButton2Click:Connect(function()
 	component:Expand(true)
-end)
+end))
 
-pin.MouseButton1Click:Connect(function()
+component:Clean(pin.MouseButton1Click:Connect(function()
 	component:Pin()
-end)
+end))
 
-window.MouseButton2Click:Connect(function()
+component:Clean(window.MouseButton2Click:Connect(function()
 	component:Expand(true)
-end)
+end))
 
-windowlist:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
+component:Clean(windowlist:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
 	if vape.ThreadFix then
 		setthreadidentity(8)
 	end
@@ -236,7 +236,7 @@ windowlist:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
 	if component.Expanded then
 		window.Size = UDim2.fromOffset(window.Size.X.Offset, math.min(41 + windowlist.AbsoluteContentSize.Y / scale.Scale, 601))
 	end
-end)
+end))
 
 component.Children = customchildren
 vape.Categories[props.Name] = component
