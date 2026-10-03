@@ -1,4 +1,4 @@
-local Mode
+local Mode = {Value = 'Player'}
 local Expand
 local objects, set = {}
 
@@ -23,7 +23,7 @@ HitBoxes = vape.Categories.Blatant:CreateModule({
 	Name = 'HitBoxes',
 	Function = function(callback)
 		if callback then
-			if Mode.Value == 'Sword' then
+			if not ce and Mode.Value == 'Sword' then
 				debug.setconstant(bedwars.SwordController.swingSwordInRegion, 6, (Expand.Value / 3))
 				set = true
 			else
@@ -39,7 +39,7 @@ HitBoxes = vape.Categories.Blatant:CreateModule({
 				end
 			end
 		else
-			if set then
+			if not ce and set then
 				debug.setconstant(bedwars.SwordController.swingSwordInRegion, 6, 3.8)
 				set = nil
 			end
@@ -51,6 +51,7 @@ HitBoxes = vape.Categories.Blatant:CreateModule({
 	end,
 	Tooltip = 'Expands attack hitbox'
 })
+if not ce then
 Mode = HitBoxes:CreateDropdown({
 	Name = 'Mode',
 	List = {'Sword', 'Player'},
@@ -62,6 +63,7 @@ Mode = HitBoxes:CreateDropdown({
 	end,
 	Tooltip = 'Sword - Increases the range around you to hit entities\nPlayer - Increases the players hitbox'
 })
+end
 Expand = HitBoxes:CreateSlider({
 	Name = 'Expand amount',
 	Min = 0,
@@ -70,7 +72,7 @@ Expand = HitBoxes:CreateSlider({
 	Decimal = 10,
 	Function = function(val)
 		if HitBoxes.Enabled then
-			if Mode.Value == 'Sword' then
+			if not ce and Mode.Value == 'Sword' then
 				debug.setconstant(bedwars.SwordController.swingSwordInRegion, 6, (val / 3))
 			else
 				for _, part in objects do
