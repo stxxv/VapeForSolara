@@ -27,7 +27,7 @@ local function getProjectiles()
 			table.insert(items, {
 				item,
 				ammo,
-				proj.projectileType(ammo),
+				proj.projectileType and proj.projectileType(ammo) or 'arrow',
 				proj
 			})
 		end
