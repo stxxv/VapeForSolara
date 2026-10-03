@@ -7,7 +7,6 @@ local component = {
 	Rainbow = false,
 	Index = 0
 }
-addMaid(component)
 
 local function createExtraSlider(name, gradientColor)
 	local colorslidercustom = Instance.new('TextButton')
@@ -58,7 +57,7 @@ local function createExtraSlider(name, gradientColor)
 	knob.Parent = knobholder
 	addCorner(knob, UDim.new(1, 0))
 
-	component:Clean(colorslidercustom.InputBegan:Connect(function(input)
+	colorslidercustom.InputBegan:Connect(function(input)
 		if
 			(input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch)
 			and (input.Position.Y - colorslidercustom.AbsolutePosition.Y) > (20 * scale.Scale)
@@ -78,19 +77,19 @@ local function createExtraSlider(name, gradientColor)
 				end
 			end)
 		end
-	end))
+	end)
 
-	component:Clean(colorslidercustom.MouseEnter:Connect(function()
+	colorslidercustom.MouseEnter:Connect(function()
 		tween:Tween(knob, uipallet.Tween, {
 			Size = UDim2.fromOffset(16, 16)
 		})
-	end))
+	end)
 
-	component:Clean(colorslidercustom.MouseLeave:Connect(function()
+	colorslidercustom.MouseLeave:Connect(function()
 		tween:Tween(knob, uipallet.Tween, {
 			Size = UDim2.fromOffset(14, 14)
 		})
-	end))
+	end)
 
 	return colorslidercustom
 end
@@ -321,17 +320,17 @@ function component:Toggle()
 	end
 end
 
-component:Clean(preview.MouseButton1Click:Connect(function()
+preview.MouseButton1Click:Connect(function()
 	preview.Visible = false
 	custombox.Visible = true
 	custombox:CaptureFocus()
 
 	local text = Color3.fromHSV(component.Hue, component.Sat, component.Value)
 	custombox.Text = math.round(text.R * 255)..', '..math.round(text.G * 255)..', '..math.round(text.B * 255)
-end))
+end)
 
 local doubleClick = os.clock()
-component:Clean(colorslider.InputBegan:Connect(function(input)
+colorslider.InputBegan:Connect(function(input)
 	if
 		(input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch)
 		and (input.Position.Y - colorslider.AbsolutePosition.Y) > (20 * scale.Scale)
@@ -358,46 +357,46 @@ component:Clean(colorslider.InputBegan:Connect(function(input)
 
 		doubleClick = os.clock() + 0.3
 	end
-end))
+end)
 
-component:Clean(colorslider.MouseEnter:Connect(function()
+colorslider.MouseEnter:Connect(function()
 	tween:Tween(knob, uipallet.Tween, {
 		Size = UDim2.fromOffset(16, 16)
 	})
-end))
+end)
 
-component:Clean(colorslider.MouseLeave:Connect(function()
+colorslider.MouseLeave:Connect(function()
 	tween:Tween(knob, uipallet.Tween, {
 		Size = UDim2.fromOffset(14, 14)
 	})
-end))
+end)
 
-component:Clean(colorslider:GetPropertyChangedSignal('Visible'):Connect(function()
+colorslider:GetPropertyChangedSignal('Visible'):Connect(function()
 	satSlider.Visible = icon.Rotation == 180 and colorslider.Visible
 	vibSlider.Visible = satSlider.Visible
 	opSlider.Visible = satSlider.Visible
-end))
+end)
 
-component:Clean(expand.MouseEnter:Connect(function()
+expand.MouseEnter:Connect(function()
 	icon.ImageColor3 = color.Dark(uipallet.Text, 0.16)
-end))
+end)
 
-component:Clean(expand.MouseLeave:Connect(function()
+expand.MouseLeave:Connect(function()
 	icon.ImageColor3 = color.Dark(uipallet.Text, 0.43)
-end))
+end)
 
-component:Clean(expand.MouseButton1Click:Connect(function()
+expand.MouseButton1Click:Connect(function()
 	satSlider.Visible = not satSlider.Visible
 	vibSlider.Visible = satSlider.Visible
 	opSlider.Visible = satSlider.Visible
 	icon.Rotation = satSlider.Visible and 180 or 0
-end))
+end)
 
-component:Clean(rainbow.MouseButton1Click:Connect(function()
+rainbow.MouseButton1Click:Connect(function()
 	component:Toggle()
-end))
+end)
 
-component:Clean(custombox.FocusLost:Connect(function(enter)
+custombox.FocusLost:Connect(function(enter)
 	preview.Visible = true
 	custombox.Visible = false
 
@@ -415,7 +414,7 @@ component:Clean(custombox.FocusLost:Connect(function(enter)
 			component:SetValue(parsed:ToHSV())
 		end
 	end
-end))
+end)
 
 api.Options[props.Name] = component
 

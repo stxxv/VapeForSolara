@@ -13,7 +13,6 @@ textbox.Text = ''
 textbox.Visible = props.Visible == nil or props.Visible
 textbox.Parent = children
 component.Object = textbox
-addMaid(component)
 addTooltip(textbox, props.Tooltip)
 local title = Instance.new('TextLabel')
 title.BackgroundTransparency = 1
@@ -78,17 +77,17 @@ function component:SetValue(val, enter)
 	props.Function(enter)
 end
 
-component:Clean(textbox.MouseButton1Click:Connect(function()
+textbox.MouseButton1Click:Connect(function()
 	inputbox:CaptureFocus()
-end))
+end)
 
 if autocomplete then
-	component:Clean(inputbox:GetPropertyChangedSignal('Text'):Connect(function()
+	inputbox:GetPropertyChangedSignal('Text'):Connect(function()
 		local plr = getPlayerFromText(inputbox.Text)
 		autocomplete.Text = plr and inputbox.Text..(plr:sub(#inputbox.Text + 1, #plr)) or ''
-	end))
+	end)
 
-	component:Clean(inputbox.Focused:Connect(function()
+	inputbox.Focused:Connect(function()
 		vape.Autocomplete = function()
 			local newText = getPlayerFromText(inputbox.Text) or inputbox.Text
 			task.spawn(function()
@@ -97,16 +96,16 @@ if autocomplete then
 				inputbox.CursorPosition = #newText + 1
 			end)
 		end
-	end))
+	end)
 end
 
-component:Clean(inputbox.FocusLost:Connect(function(enter)
+inputbox.FocusLost:Connect(function(enter)
 	component:SetValue(inputbox.Text, enter)
-end))
+end)
 
-component:Clean(inputbox:GetPropertyChangedSignal('Text'):Connect(function()
+inputbox:GetPropertyChangedSignal('Text'):Connect(function()
 	component:SetValue(inputbox.Text)
-end))
+end)
 
 api.Options[props.Name] = component
 

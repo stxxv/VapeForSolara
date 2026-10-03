@@ -63,9 +63,9 @@ local function Added(v)
 	layout.Padding = UDim.new(0, 4)
 	layout.VerticalAlignment = Enum.VerticalAlignment.Center
 	layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	BedPlates:Clean(layout:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
+	layout:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
 		billboard.Size = UDim2.fromOffset(math.max(layout.AbsoluteContentSize.X + 4, 36), 36)
-	end))
+	end)
 	layout.Parent = frame
 	local corner = Instance.new('UICorner')
 	corner.CornerRadius = UDim.new(0, 4)

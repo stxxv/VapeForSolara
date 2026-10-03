@@ -74,9 +74,9 @@ NameShadow.TextTransparency = 0.65
 NameShadow.Visible = false
 NameShadow.Parent = Holder
 for _, prop in {'Size', 'Text', 'FontFace'} do
-	TargetInfoOverlay:Clean(Name:GetPropertyChangedSignal(prop):Connect(function()
+	Name:GetPropertyChangedSignal(prop):Connect(function()
 		NameShadow[prop] = Name[prop]
-	end))
+	end)
 end
 Name.Parent = Holder
 local HealthBKG = Instance.new('Frame')
@@ -92,9 +92,9 @@ Health.Size = UDim2.fromScale(0.8, 1)
 Health.Position = UDim2.new()
 Health.BackgroundColor3 = Color3.fromHSV(1 / 2.5, 0.89, 0.75)
 Health.Parent = HealthBKG
-TargetInfoOverlay:Clean(Health:GetPropertyChangedSignal('Size'):Connect(function()
+Health:GetPropertyChangedSignal('Size'):Connect(function()
 	Health.Visible = Health.Size.X.Scale > 0.01
-end))
+end)
 local Armor = Health:Clone()
 Armor.Size = UDim2.new()
 Armor.Position = UDim2.fromScale(1, 0)
@@ -102,9 +102,9 @@ Armor.AnchorPoint = Vector2.new(1, 0)
 Armor.BackgroundColor3 = Color3.fromRGB(255, 170, 0)
 Armor.Visible = false
 Armor.Parent = HealthBKG
-TargetInfoOverlay:Clean(Armor:GetPropertyChangedSignal('Size'):Connect(function()
+Armor:GetPropertyChangedSignal('Size'):Connect(function()
 	Armor.Visible = Armor.Size.X.Scale > 0.01
-end))
+end)
 local HealthBlur = addBlur(HealthBKG)
 HealthBlur.Enabled = false
 local Stroke = Instance.new('UIStroke')

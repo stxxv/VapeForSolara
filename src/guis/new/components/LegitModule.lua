@@ -193,15 +193,15 @@ for index, comp in components do
 	end
 end
 
-component:Clean(back.MouseEnter:Connect(function()
+back.MouseEnter:Connect(function()
 	back.ImageColor3 = uipallet.Text
-end))
+end)
 
-component:Clean(back.MouseLeave:Connect(function()
+back.MouseLeave:Connect(function()
 	back.ImageColor3 = color.Light(uipallet.Main, 0.37)
-end))
+end)
 
-component:Clean(back.MouseButton1Click:Connect(function()
+back.MouseButton1Click:Connect(function()
 	tween:Tween(shadow, uipallet.Tween, {
 		BackgroundTransparency = 1
 	})
@@ -213,25 +213,25 @@ component:Clean(back.MouseButton1Click:Connect(function()
 	task.delay(0.2, function()
 		shadow.Visible = false
 	end)
-end))
+end)
 
-component:Clean(button.MouseEnter:Connect(function()
+button.MouseEnter:Connect(function()
 	if not component.Enabled then
 		button.BackgroundColor3 = color.Light(uipallet.Main, 0.05)
 	end
-end))
+end)
 
-component:Clean(button.MouseLeave:Connect(function()
+button.MouseLeave:Connect(function()
 	if not component.Enabled then
 		button.BackgroundColor3 = color.Light(uipallet.Main, 0.02)
 	end
-end))
+end)
 
-component:Clean(button.MouseButton1Click:Connect(function()
+button.MouseButton1Click:Connect(function()
 	component:Toggle()
-end))
+end)
 
-component:Clean(button.MouseButton2Click:Connect(function()
+button.MouseButton2Click:Connect(function()
 	shadow.Visible = true
 
 	tween:Tween(shadow, uipallet.Tween, {
@@ -241,9 +241,9 @@ component:Clean(button.MouseButton2Click:Connect(function()
 	tween:Tween(settingspane, uipallet.Tween, {
 		Position = UDim2.new(1, -220, 0, 0)
 	})
-end))
+end)
 
-component:Clean(dotsbutton.MouseButton1Click:Connect(function()
+dotsbutton.MouseButton1Click:Connect(function()
 	shadow.Visible = true
 
 	tween:Tween(shadow, uipallet.Tween, {
@@ -253,17 +253,17 @@ component:Clean(dotsbutton.MouseButton1Click:Connect(function()
 	tween:Tween(settingspane, uipallet.Tween, {
 		Position = UDim2.new(1, -220, 0, 0)
 	})
-end))
+end)
 
-component:Clean(dotsbutton.MouseEnter:Connect(function()
+dotsbutton.MouseEnter:Connect(function()
 	dots.ImageColor3 = uipallet.Text
-end))
+end)
 
-component:Clean(dotsbutton.MouseLeave:Connect(function()
+dotsbutton.MouseLeave:Connect(function()
 	dots.ImageColor3 = color.Light(uipallet.Main, 0.37)
-end))
+end)
 
-component:Clean(shadow.MouseButton1Click:Connect(function()
+shadow.MouseButton1Click:Connect(function()
 	tween:Tween(shadow, uipallet.Tween, {
 		BackgroundTransparency = 1
 	})
@@ -275,20 +275,20 @@ component:Clean(shadow.MouseButton1Click:Connect(function()
 	task.delay(0.2, function()
 		shadow.Visible = false
 	end)
-end))
+end)
 
-component:Clean(shadow:GetPropertyChangedSignal('Visible'):Connect(function()
+shadow:GetPropertyChangedSignal('Visible'):Connect(function()
 	tooltip.Visible = false
 	vape.LegitVisible = shadow.Visible
-end))
+end)
 
-component:Clean(windowlist:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
+windowlist:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
 	if vape.ThreadFix then
 		setthreadidentity(8)
 	end
 
 	settingschildren.CanvasSize = UDim2.fromOffset(0, windowlist.AbsoluteContentSize.Y / scale.Scale)
-end))
+end)
 
 api.Modules[props.Name] = component
 
