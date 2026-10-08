@@ -91,8 +91,8 @@ Killaura = vape.Categories.Blatant:CreateModule({
 							end
 
 							if delta.Magnitude > AttackRange.Value then continue end
-							if AttackDelay < tick() then
-								AttackDelay = tick() + (1 / CPS.GetRandomValue())
+							--[[if AttackDelay < tick() then
+								AttackDelay = tick() + (1 / CPS.GetRandomValue())]]
 								local bdent = bd.Entity.FindByCharacter(v.Character)
 								if bdent then
 									bd.Blink.item_action.attack_entity.fire({
@@ -106,7 +106,7 @@ Killaura = vape.Categories.Blatant:CreateModule({
 										}
 									})
 								end
-							end
+							--end
 						end
 					else
 						if AutoBlock.Enabled and bd.Entity.LocalEntity.IsBlocking then
