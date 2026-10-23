@@ -18,7 +18,7 @@ local function Hook(...)
 		})
 
 		if ent then
-			targetinfo.Targets[ent] = tick() + 1
+			targetinfo.Targets[ent] = os.clock() + 1
 			return CFrame.lookAt(gameCamera.CFrame.Position, ent.Head.Position).LookVector
 		end
 	end
@@ -29,6 +29,10 @@ end
 SilentAim = vape.Categories.Combat:CreateModule({
 	Name = 'SilentAim',
 	Function = function(callback)
+		if CircleObject then
+			CircleObject.Visible = callback
+		end
+
 		if callback then
 			old = hookfunction(redline.ShootFunction, function(...)
 				return Hook(...)
