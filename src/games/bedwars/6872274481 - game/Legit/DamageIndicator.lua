@@ -13,6 +13,7 @@ local oldvalues, oldfont = {}
 DamageIndicator = vape.Legit:CreateModule({
 	Name = 'Damage Indicator',
 	Function = function(callback)
+		if ce then return end
 		if callback then
 			oldvalues = table.clone(tab)
 			oldfont = debug.getconstant(bedwars.DamageIndicator, 86)
@@ -45,7 +46,7 @@ FontOption = DamageIndicator:CreateDropdown({
 	Name = 'Font',
 	List = fontitems,
 	Function = function(val)
-		if DamageIndicator.Enabled then
+		if not ce and DamageIndicator.Enabled then
 			debug.setconstant(bedwars.DamageIndicator, 86, Enum.Font[val])
 		end
 	end
@@ -85,7 +86,7 @@ Anchor = DamageIndicator:CreateSlider({
 Stroke = DamageIndicator:CreateToggle({
 	Name = 'Stroke',
 	Function = function(callback)
-		if DamageIndicator.Enabled then
+		if not ce and DamageIndicator.Enabled then
 			debug.setconstant(bedwars.DamageIndicator, 119, callback and 'Thickness' or 'Enabled')
 			tab.strokeThickness = callback and 1 or false
 		end

@@ -49,6 +49,7 @@ local AutoKitFunctions = {
 		end, 12, false)
 	end,
 	block_kicker = function()
+		if ce then return end
 		local old = bedwars.BlockKickerKitController.getKickBlockProjectileOriginPosition
 		bedwars.BlockKickerKitController.getKickBlockProjectileOriginPosition = function(...)
 			local origin, dir = select(2, ...)

@@ -4,6 +4,7 @@ local oldclickhold, oldshowprogress
 local FastConsume = vape.Categories.Inventory:CreateModule({
 	Name = 'FastConsume',
 	Function = function(callback)
+		if ce then return end
 		if callback then
 			oldclickhold = bedwars.ClickHold.startClick
 			oldshowprogress = bedwars.ClickHold.showProgress

@@ -5,6 +5,7 @@ local NameToId = {}
 WinEffect = vape.Legit:CreateModule({
 	Name = 'WinEffect',
 	Function = function(callback)
+		if ce then return end
 		if callback then
 			WinEffect:Clean(vapeEvents.MatchEndEvent.Event:Connect(function()
 				for i, v in getconnections(bedwars.Client:Get('WinEffectTriggered').instance.OnClientEvent) do

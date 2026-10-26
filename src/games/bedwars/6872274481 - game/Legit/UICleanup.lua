@@ -2,8 +2,8 @@ local UICleanup
 local OpenInv
 local KillFeed
 local OldTabList
-local HotbarApp = getRoactRender(require(lplr.PlayerScripts.TS.controllers.global.hotbar.ui['hotbar-app']).HotbarApp.render)
-local HotbarOpenInventory = require(lplr.PlayerScripts.TS.controllers.global.hotbar.ui['hotbar-open-inventory']).HotbarOpenInventory
+local HotbarApp = not ce and getRoactRender(require(lplr.PlayerScripts.TS.controllers.global.hotbar.ui['hotbar-app']).HotbarApp.render) or nil
+local HotbarOpenInventory = not ce and require(lplr.PlayerScripts.TS.controllers.global.hotbar.ui['hotbar-open-inventory']).HotbarOpenInventory or nil
 local old, new = {}, {}
 local oldkillfeed
 
@@ -48,7 +48,7 @@ UICleanup = vape.Legit:CreateModule({
 			end
 		end
 		if callback then
-			if OpenInv.Enabled then
+			if OpenInv.Enabled and HotbarOpenInventory then
 				oldinvrender = HotbarOpenInventory.render
 				HotbarOpenInventory.render = function()
 					return bedwars.Roact.createElement('TextButton', {Visible = false}, {})
@@ -64,7 +64,7 @@ UICleanup = vape.Legit:CreateModule({
 				starterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, true)
 			end
 		else
-			if oldinvrender then
+			if oldinvrender and HotbarOpenInventory then
 				HotbarOpenInventory.render = oldinvrender
 				oldinvrender = nil
 			end
@@ -85,16 +85,20 @@ UICleanup:CreateToggle({
 	Name = 'Resize Health',
 	Function = function(callback)
 		modifyconstant(HotbarApp, 60, callback and 1 or nil)
-		modifyconstant(debug.getupvalue(HotbarApp, 15).render, 30, callback and 1 or nil)
-		modifyconstant(debug.getupvalue(HotbarApp, 23).tweenPosition, 16, callback and 0 or nil)
+		if not ce then
+			modifyconstant(debug.getupvalue(HotbarApp, 15).render, 30, callback and 1 or nil)
+			modifyconstant(debug.getupvalue(HotbarApp, 23).tweenPosition, 16, callback and 0 or nil)
+		end
 	end,
 	Default = true
 })
 UICleanup:CreateToggle({
 	Name = 'No Hotbar Numbers',
 	Function = function(callback)
-		local func = oldinvrender or HotbarOpenInventory.render
-		modifyconstant(debug.getupvalue(HotbarApp, 23).render, 90, callback and 0 or nil)
+		local func = oldinvrender or (HotbarOpenInventory and HotbarOpenInventory.render)
+		if not ce then
+			modifyconstant(debug.getupvalue(HotbarApp, 23).render, 90, callback and 0 or nil)
+		end
 		modifyconstant(func, 71, callback and 0 or nil)
 	end,
 	Default = true
@@ -103,7 +107,7 @@ OpenInv = UICleanup:CreateToggle({
 	Name = 'No Inventory Button',
 	Function = function(callback)
 		modifyconstant(HotbarApp, 78, callback and 0 or nil)
-		if UICleanup.Enabled then
+		if UICleanup.Enabled and HotbarOpenInventory then
 			if callback then
 				oldinvrender = HotbarOpenInventory.render
 				HotbarOpenInventory.render = function()

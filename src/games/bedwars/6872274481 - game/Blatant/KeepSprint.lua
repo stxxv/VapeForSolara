@@ -1,6 +1,7 @@
 vape.Categories.Blatant:CreateModule({
 	Name = 'KeepSprint',
 	Function = function(callback)
+		if ce then return end
 		debug.setconstant(bedwars.SprintController.startSprinting, 5, callback and 'blockSprinting' or 'blockSprint')
 		bedwars.SprintController:stopSprinting()
 	end,
