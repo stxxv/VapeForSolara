@@ -34,7 +34,7 @@ local function wipeFolder(path)
 	end
 end
 
-for _, folder in {'newvape', 'newvape/games', 'newvape/profiles', 'newvape/assets', 'newvape/libraries', 'newvape/libraries/bedwars', 'newvape/guis'} do
+for _, folder in {'newvape', 'newvape/games', 'newvape/profiles', 'newvape/assets', 'newvape/libraries', 'newvape/guis'} do
 	if not isfolder(folder) then
 		makefolder(folder)
 	end
@@ -55,6 +55,7 @@ if not shared.VapeDeveloper then
 		wipeFolder('newvape/games')
 		wipeFolder('newvape/guis')
 		wipeFolder('newvape/libraries')
+		wipeFolder('newvape/libraries/bedwars')
 	end
 
 	if (isfile('newvape/profiles/asset.txt') and readfile('newvape/profiles/asset.txt') or '') ~= assetVer then
