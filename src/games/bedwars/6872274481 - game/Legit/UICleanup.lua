@@ -19,6 +19,7 @@ vape:Clean(function()
 end)
 
 local function modifyconstant(func, ind, val)
+	if not func then return end
 	if not old[func] then old[func] = {} end
 	if not new[func] then new[func] = {} end
 	if not old[func][ind] then
@@ -148,7 +149,9 @@ OldTabList = UICleanup:CreateToggle({
 UICleanup:CreateToggle({
 	Name = 'Fix Queue Card',
 	Function = function(callback)
-		modifyconstant(bedwars.QueueCard.render, 15, callback and 0.1 or nil)
+		if not ce then
+			modifyconstant(bedwars.QueueCard.render, 15, callback and 0.1 or nil)
+		end
 	end,
 	Default = true
 })

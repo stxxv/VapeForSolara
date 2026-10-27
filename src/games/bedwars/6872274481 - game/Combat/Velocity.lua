@@ -9,6 +9,7 @@ Velocity = vape.Categories.Combat:CreateModule({
 	Name = 'Velocity',
 	Function = function(callback)
 		if callback then
+			
 			old = bedwars.KnockbackUtil.applyKnockback
 			bedwars.KnockbackUtil.applyKnockback = function(root, mass, dir, knockback, ...)
 				if rand:NextNumber(0, 100) > Chance.Value then return end
