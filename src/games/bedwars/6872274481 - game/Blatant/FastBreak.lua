@@ -1,3 +1,6 @@
+-- needs the real block breaker cooldown, the emulated one is a no-op
+if ce then return end
+
 local FastBreak
 local Time
 

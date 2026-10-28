@@ -111,7 +111,7 @@ Scaffold = vape.Categories.Utility:CreateModule({
 							local block, blockpos = getPlacedBlock(currentpos)
 							if not block then
 								blockpos = checkAdjacent(blockpos * 3) and blockpos * 3 or blockProximity(currentpos)
-								if blockpos then
+								if blockpos and (workspace:GetServerTimeNow() - bedwars.BlockCpsController.lastPlaceTimestamp) >= ((1 / 12) * 0.5) then
 									task.spawn(bedwars.placeBlock, blockpos, wool, false)
 								end
 							end

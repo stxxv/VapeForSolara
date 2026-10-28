@@ -1,3 +1,6 @@
+-- mutates the real CombatConstant, emulated tables don't affect server validation
+if ce then return end
+
 local Value
 
 Reach = vape.Categories.Combat:CreateModule({

@@ -1,3 +1,6 @@
+-- hooks the real projectile controller, emulated executors have nothing to hook
+if ce then return end
+
 local TargetPart
 local Targets
 local FOV

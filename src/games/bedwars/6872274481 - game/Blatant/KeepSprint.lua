@@ -1,3 +1,6 @@
+-- debug.setconstant needs a debug enabled executor, hiding it on emulated ones
+if ce then return end
+
 vape.Categories.Blatant:CreateModule({
 	Name = 'KeepSprint',
 	Function = function(callback)

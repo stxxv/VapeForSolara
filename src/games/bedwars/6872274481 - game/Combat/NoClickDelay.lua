@@ -1,5 +1,6 @@
-local old
+if ce then return end
 
+local old
 vape.Categories.Combat:CreateModule({
 	Name = 'NoClickDelay',
 	Function = function(callback)
