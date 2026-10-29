@@ -119,18 +119,25 @@ Regenerate that file with `compiler.lua` running in a live match; it is large (~
   `getBlockPosition(part.Position)` on a 3-stud block returns `part.Position / 3`.
 - `roundBlockPos(pos)` converts world → grid (no multiply). `findBlock(pos)` takes grid and
   indexes the store directly, so never round a value twice.
-- `getBlockIndex()` rebuilds every 0.5 s from `collectionService:GetTagged('block')`, keeping
-  only `BasePart`s with `Size == Vector3.one * 3`, keyed by grid position.
+- `getBlockIndex()` rebuilds every 0.15 s from `collectionService:GetTagged('block')`, bucketing
+  every `BasePart` into 8-cell chunks by the grid range its bounding box covers
+  (`blockCellRange`). A chunk is expanded to `cell -> part` the first time a cell in it is
+  asked for, so a merged part is only walked for the chunks actually queried.
+- **Blocks are merged, so never key the store by instance centre.** The game collapses runs of
+  identical blocks into one greedy part (attribute `GreedyBlock`): one `grass` part can cover
+  30×6×9 studs, and a bed is a 3×3×3 `MeshPart`. In a live match ~2275 parts tagged `block`
+  cover ~103k cells. Filtering by `Size == Vector3.one * 3` (which the index used to do) hides
+  most of the map — that is what made Breaker work on beds and nothing else.
 - `getPlacedBlock(pos)` (base.lua) is the module-facing wrapper: it takes a **world** position
   and returns `(instance, gridPosition)`. `sides` holds the six `Enum.NormalId * 3` world
   offsets, so `calculatePath` keys its maps in world space and hands back world positions.
 
-**Known constraint:** the tag is applied to more than real blocks — logs, props and map
-decoration carry it too, and they are filtered out by the size check. As of the last test,
-2834 instances carried the tag and 931 passed the filter. Consequently `findBlock` returns nil
-for anything off the 3-stud grid (beds, lucky blocks, iron ore). `bedwars.breakBlock` handles
-this by falling back to the instance the caller passed in — keep that fallback if you touch
-this area.
+**Only cells are keys.** `findBlock` answers for every cell a part covers, so beds, lucky
+blocks and iron ore on the 3-stud grid are found like any other block. `bedwars.breakBlock`
+keeps its fallback to the caller's instance only for parts that are not tagged `block` at all —
+keep it if you touch this area, and keep the path cache short-lived (`calculatePath` caches for
+0.3 s), since a cached path to a block that has since been broken parks the breaker on an
+empty cell.
 
 ## Module API
 
@@ -185,6 +192,16 @@ therefore:
   compare nil against a number. Mark `air[node[2]]` (the parent block), never `air[side]`.
 - **`createLocalProjectile`** must destroy its model on *both* impact and expiry; disconnecting
   the Heartbeat connection alone leaves instances in workspace forever.
+- **Remote shapes differ.** `PlaceBlock` and `DamageBlock` are `RemoteFunction`s
+  (`CallServer` → `InvokeServer`, and the result comes back directly — do not chain `:andThen`
+  on it); `SwordHit`, `SwordSwingMiss` and the rest are `RemoteEvent`s. A placement is only
+  accepted with `{blockType, position, blockData, mouseBlockInfo}`, where `mouseBlockInfo` is
+  `{target = {blockRef, hitPosition, hitNormal}, placementPosition}` — without it the server
+  cancels the placement, silently.
+- **A missed swing still sends.** The real controller routes hits *and* misses through
+  `attackEntity(nil, …)`: a miss plays the swing and fires `SwordSwingMiss`
+  (`{weapon, chargeRatio}`, 20 a second server side). Skipping it desyncs the game's own swing
+  bookkeeping, so `swingSwordInRegion` must not short-circuit on "no target".
 - **`AppController:isAppOpen`** is an emulation: screen GUIs stay mounted while closed, so
   checking existence is not enough — check actual visibility, or `isLayerOpen` reports true
   during normal play and silently disables AutoClicker/TriggerBot/Killaura.
