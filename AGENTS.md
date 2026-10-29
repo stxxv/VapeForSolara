@@ -109,12 +109,21 @@ Regenerate that file with `compiler.lua` running in a live match; it is large (~
 
 ## Block model
 
-- Grid is **3 studs**: `roundBlockPos(v) = math.round(v / 3) * 3`. `sides` holds the six
-  `Enum.NormalId * 3` neighbour offsets.
+- Blocks are **3 studs**, and the API works in **two coordinate spaces**:
+  - *grid* = world / 3, integer. `getBlockPosition(390, 24, 453)` is `(130, 8, 151)`.
+  - *world* = grid * 3. `getWorldPosition(130, 8, 151)` is `(390, 24, 453)`.
+
+  The real engine's store, every `blockRef.blockPosition`, the block selector's
+  `placementPosition`, and therefore all module code use **grid**. Positions used for
+  raycasts, magnitudes and `hitPosition` use **world**. Verified against the live client:
+  `getBlockPosition(part.Position)` on a 3-stud block returns `part.Position / 3`.
+- `roundBlockPos(pos)` converts world → grid (no multiply). `findBlock(pos)` takes grid and
+  indexes the store directly, so never round a value twice.
 - `getBlockIndex()` rebuilds every 0.5 s from `collectionService:GetTagged('block')`, keeping
-  only `BasePart`s with `Size == Vector3.one * 3`.
-- `findBlock(pos)` looks up that index; `getPlacedBlock(pos)` (base.lua) is the module-facing
-  wrapper and returns `(instance, roundedPos)`.
+  only `BasePart`s with `Size == Vector3.one * 3`, keyed by grid position.
+- `getPlacedBlock(pos)` (base.lua) is the module-facing wrapper: it takes a **world** position
+  and returns `(instance, gridPosition)`. `sides` holds the six `Enum.NormalId * 3` world
+  offsets, so `calculatePath` keys its maps in world space and hands back world positions.
 
 **Known constraint:** the tag is applied to more than real blocks — logs, props and map
 decoration carry it too, and they are filtered out by the size check. As of the last test,
@@ -180,4 +189,10 @@ therefore:
   checking existence is not enough — check actual visibility, or `isLayerOpen` reports true
   during normal play and silently disables AutoClicker/TriggerBot/Killaura.
 - **Placing a block** requires holding it. `bedwars.placeBlock` switches via `switchItem` before
-  sending `PlaceBlock`.
+  sending `PlaceBlock`, and it takes a **world** position.
+- **Coordinate space** — sending a world position where the server expects grid (or the store
+  keyed by world) makes `DamageBlock` answer `cancelled` and `PlaceBlock` do nothing, with no
+  error anywhere. `bedwars.placeBlock` (world in) and `BlockPlacer:placeBlock` (grid in) are the
+  two boundaries; everything string compared, cached or sent as a `blockRef` is grid.
+- **`getBlocksInPoints`** must walk the store, not the `(2*range)^3` cube it covers: that was
+  ~74k lookups per call and Scaffold makes several per 0.03 s tick.
