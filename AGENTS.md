@@ -192,6 +192,13 @@ therefore:
   compare nil against a number. Mark `air[node[2]]` (the parent block), never `air[side]`.
 - **`createLocalProjectile`** must destroy its model on *both* impact and expiry; disconnecting
   the Heartbeat connection alone leaves instances in workspace forever.
+- **Placement has to be throttled by hand.** The engine wraps every placement in
+  `BlockEngine:isAllowedPlacement` and only places at its own cadence. Scaffold calls
+  `bedwars.placeBlock` once per expand step per 0.03 s tick, so without the same gate the
+  emulation fires dozens of blocking `PlaceBlock` invokes a second the moment placements start
+  succeeding. `placeBlock` keeps a 0.05 s floor, remembers cells it filled for 0.5 s (the index
+  lags 0.15 s, so a just-filled cell still looks empty), and does every yielding step — item
+  switch, remote call — off the caller's thread with the result `pcall`ed.
 - **Remote shapes differ.** `PlaceBlock` and `DamageBlock` are `RemoteFunction`s
   (`CallServer` → `InvokeServer`, and the result comes back directly — do not chain `:andThen`
   on it); `SwordHit`, `SwordSwingMiss` and the rest are `RemoteEvent`s. A placement is only
