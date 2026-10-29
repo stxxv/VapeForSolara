@@ -103,6 +103,12 @@ Everything after that early return is the **emulated** game surface: `bedwars.Bl
 must stay API-compatible with the decompiled client — same method names, same argument order,
 same return shapes.
 
+**Nothing may depend on `require` returning the real game module.** On Solara `require` is a
+stand-in, so an emulated surface has to be rebuilt from what the client can observe — tags,
+attributes, parts, remotes, attributes on the local player — not from the game's own classes.
+The decompiled source in `ReplicatedStorage.rbxts_include…block-engine` is the specification to
+copy the *behaviour* from; calling into it is not an option.
+
 Metadata (`ItemMeta`, `ProjectileMeta`, `QueueMeta`, `ShopItems`, `AppLayers`, `UILayers`,
 `SoundList`, `CombatConstant`, …) is loaded from `construct.json` into `meta` near the top.
 Regenerate that file with `compiler.lua` running in a live match; it is large (~1.7 MB).
@@ -119,10 +125,27 @@ Regenerate that file with `compiler.lua` running in a live match; it is large (~
   `getBlockPosition(part.Position)` on a 3-stud block returns `part.Position / 3`.
 - `roundBlockPos(pos)` converts world → grid (no multiply). `findBlock(pos)` takes grid and
   indexes the store directly, so never round a value twice.
-- `getBlockIndex()` rebuilds every 0.15 s from `collectionService:GetTagged('block')`, bucketing
-  every `BasePart` into 8-cell chunks by the grid range its bounding box covers
-  (`blockCellRange`). A chunk is expanded to `cell -> part` the first time a cell in it is
-  asked for, so a merged part is only walked for the chunks actually queried.
+- **The store is incremental, not rebuilt.** It is a port of `basic-block-store` +
+  `client-block-engine.startBlockReplication`: every tagged part is registered once into
+  `blocks[cell] = part` (one entry per cell it covers) plus `blockRoots[part] = rootCell`, and
+  it is kept in step by `GetInstanceAddedSignal('block')`, a `Size` connection (the server
+  re-cuts a merged part when a neighbour is placed) and `AncestryChanged`. Do **not** put a
+  periodic `GetTagged` scan back: it allocates per cell, goes blind between rebuilds, and was
+  the source of both the lag and the stale answers.
+- The store exposes the real surface — `getBlockAt`, `getBlockData` (the `Workspace.BlockData`
+  folder entry, not the part), `getBlocksInRegion3`, `getAllBlocks`, `getAllBlockPositions`,
+  `setBlock`, `setBlockRootPosition`, `getBlockRootPosition`, `removeBlockInstance`.
+  `bedwars.BlockController` likewise keeps `getBlockPosition` / `getWorldPosition` /
+  `snapPosition` / `getStore` / `getHandlerRegistry` (with `getContainedPositions` and
+  `getBlockMeta`) / `getAnimationController` (`PLACE_BLOCK` is 0, `BREAK_BLOCK` is 1) /
+  `getCharacter` / `getBlockInstanceFromChild` / `isAllowedPlacement` / `calculateBlockDamage`.
+- **Placement goes through `isAllowedPlacement` first.** The emulated gate rejects an occupied
+  cell, a cell with a placement already in flight (`pendingPlacements`, the stand-in for the
+  local block the real placer creates before it sends) and a cell inside the player's head.
+  The old 20/s throttle is gone; do not re-add one — the gate is the rate limit.
+- `mouseBlockInfo` must be present and consistent: `target.blockRef.blockPosition` is the cell
+  being built **against** (grid), `hitPosition` is a world point on the face that touches the
+  new cell, `hitNormal` is that face, and `placementPosition` is the new cell (grid).
 - **Blocks are merged, so never key the store by instance centre.** The game collapses runs of
   identical blocks into one greedy part (attribute `GreedyBlock`): one `grass` part can cover
   30×6×9 studs, and a bed is a 3×3×3 `MeshPart`. In a live match ~2275 parts tagged `block`
