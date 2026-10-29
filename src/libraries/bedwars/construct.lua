@@ -3155,18 +3155,10 @@ bedwars.placeBlock = function(pos, item)
     end]]
     local blockpos = bedwars.BlockController:getBlockPosition(pos)
     local success, result = pcall(function()
-        bedwars.ClientDamageBlock:Get('PlaceBlock'):CallServer({
+        return bedwars.ClientDamageBlock:Get('PlaceBlock'):CallServer({
             blockType = item,
             position = blockpos,
-            blockData = 0,
-			mouseBlockInfo = {
-				target = {
-                    blockRef = {blockPosition = blockpos},
-                    hitPosition = blockpos * 3,
-                    hitNormal = Vector3.zero
-                },
-				placementPosition = blockpos
-			},
+            blockData = 0
         })
     end)
 
