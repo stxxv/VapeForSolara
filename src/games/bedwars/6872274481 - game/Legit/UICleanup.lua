@@ -41,56 +41,53 @@ local function modifyconstant(func, ind, val)
 	end
 end
 
-local function clean(callback)
-	if callback then
-		if OpenInv.Enabled then
-			lplr.PlayerGui.hotbar['1'].ItemsHotbar['10'].Visible = false
-
-			UICleanup:Clean(lplr.PlayerGui.ChildAdded:Connect(function(obj)
-				if obj.Name == 'hotbar' then
-					obj['1'].ItemsHotbar['10'].Visible = OpenInv.Enabled
-				end
-			end))
-		end
-
-		if NoHotbar.Enabled then
-			for i,v in lplr.PlayerGui.hotbar['1'].ItemsHotbar:GetChildren() do
-				v:FindFirstChildOfClass('TextLabel').Visible = false
-			end
-
-			UICleanup:Clean(lplr.PlayerGui.ChildAdded:Connect(function(obj)
-				if obj.Name == 'hotbar' then
-					for i,v in obj['1'].ItemsHotbar:GetChildren() do
-						v:FindFirstChildOfClass('TextLabel').Visible = NoHotbar.Enabled
-					end
-				end
-			end))
-		end
-
-		if KillFeed.Enabled then
-			lplr.PlayerGui.KillFeedGui.Enabled = false
-		end
-
-		if OldTabList.Enabled then
-			starterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, true)
-		end
-	else
-		lplr.PlayerGui.hotbar['1'].ItemsHotbar['10'].Visible = true
-
-		for i,v in lplr.PlayerGui.hotbar['1'].ItemsHotbar:GetChildren() do
-			v:FindFirstChildOfClass('TextLabel').Visible = true
-		end
-
-		lplr.PlayerGui.KillFeedGui.Enabled = true
-		starterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
-	end
-end
-
 UICleanup = vape.Legit:CreateModule({
 	Name = 'UI Cleanup',
 	Function = function(callback)
 		if ce then
-			clean(callback)
+			if callback then
+				if OpenInv.Enabled then
+					lplr.PlayerGui.hotbar['1'].ItemsHotbar['10'].Visible = false
+
+					UICleanup:Clean(lplr.PlayerGui.ChildAdded:Connect(function(obj)
+						if obj.Name == 'hotbar' then
+							obj['1'].ItemsHotbar['10'].Visible = OpenInv.Enabled
+						end
+					end))
+				end
+
+				if NoHotbar.Enabled then
+					for i,v in lplr.PlayerGui.hotbar['1'].ItemsHotbar:GetChildren() do
+						v:FindFirstChildOfClass('TextLabel').Visible = false
+					end
+
+					UICleanup:Clean(lplr.PlayerGui.ChildAdded:Connect(function(obj)
+						if obj.Name == 'hotbar' then
+							for i,v in obj['1'].ItemsHotbar:GetChildren() do
+								v:FindFirstChildOfClass('TextLabel').Visible = NoHotbar.Enabled
+							end
+						end
+					end))
+				end
+
+				if KillFeed.Enabled then
+					lplr.PlayerGui.KillFeedGui.Enabled = false
+				end
+
+				if OldTabList.Enabled then
+					starterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, true)
+				end
+			else
+				lplr.PlayerGui.hotbar['1'].ItemsHotbar['10'].Visible = true
+
+				for i,v in lplr.PlayerGui.hotbar['1'].ItemsHotbar:GetChildren() do
+					v:FindFirstChildOfClass('TextLabel').Visible = true
+				end
+
+				lplr.PlayerGui.KillFeedGui.Enabled = true
+				starterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
+			end
+
 			return
 		end
 
