@@ -7,6 +7,11 @@ BedBreakEffect = vape.Legit:CreateModule({
 	Name = 'Bed Break Effect',
 	Function = function(callback)
 		if callback then
+            if not firesignal then
+                notif('Vape', 'Unable to use Bed Break Effect, no firesignal function', 4)
+                BedBreakEffect:Toggle()
+            end
+
             BedBreakEffect:Clean(vapeEvents.BedwarsBedBreak.Event:Connect(function(data)
                 firesignal(bedwars.Client:Get('BedBreakEffectTriggered').instance.OnClientEvent, {
                     player = data.player,

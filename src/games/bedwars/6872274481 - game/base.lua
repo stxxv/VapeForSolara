@@ -711,6 +711,6 @@ run(function()
 	repeat task.wait() until construct ~= nil and construct.loaded
 end)
 
-for _, v in {'AntiRagdoll', 'TriggerBot', 'SilentAim', 'AutoRejoin', 'Rejoin', 'Disabler', 'Timer', 'ServerHop', 'MouseTP', 'MurderMystery', 'Invisible', 'Swim'} do
+for _, v in {'AntiRagdoll', 'TriggerBot', 'SilentAim', 'AutoRejoin', 'Rejoin', 'Disabler', 'Timer', 'ServerHop', 'MouseTP', 'MurderMystery', 'Invisible', 'Swim', 'Reach', 'Wallhop'} do
 	vape:Remove(v)
 end

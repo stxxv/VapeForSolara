@@ -1,6 +1,3 @@
--- patches movement modifiers the in game controller owns, hidden on emulated executors
-if ce then return end
-
 local old
 
 vape.Categories.Blatant:CreateModule({

@@ -1,6 +1,7 @@
 local UICleanup
 local OpenInv
 local KillFeed
+local NoHotbar
 local OldTabList
 local HotbarApp = not ce and getRoactRender(require(lplr.PlayerScripts.TS.controllers.global.hotbar.ui['hotbar-app']).HotbarApp.render) or nil
 local HotbarOpenInventory = not ce and require(lplr.PlayerScripts.TS.controllers.global.hotbar.ui['hotbar-open-inventory']).HotbarOpenInventory or nil
@@ -40,14 +41,65 @@ local function modifyconstant(func, ind, val)
 	end
 end
 
+local function clean(callback)
+	if callback then
+		if OpenInv.Enabled then
+			lplr.PlayerGui.hotbar['1'].ItemsHotbar['10'].Visible = false
+
+			UICleanup:Clean(lplr.PlayerGui.ChildAdded:Connect(function(obj)
+				if obj.Name == 'hotbar' then
+					obj['1'].ItemsHotbar['10'].Visible = OpenInv.Enabled
+				end
+			end))
+		end
+
+		if NoHotbar.Enabled then
+			for i,v in lplr.PlayerGui.hotbar['1'].ItemsHotbar:GetChildren() do
+				v:FindFirstChildOfClass('TextLabel').Visible = false
+			end
+
+			UICleanup:Clean(lplr.PlayerGui.ChildAdded:Connect(function(obj)
+				if obj.Name == 'hotbar' then
+					for i,v in obj['1'].ItemsHotbar:GetChildren() do
+						v:FindFirstChildOfClass('TextLabel').Visible = NoHotbar.Enabled
+					end
+				end
+			end))
+		end
+
+		if KillFeed.Enabled then
+			lplr.PlayerGui.KillFeedGui.Enabled = false
+		end
+
+		if OldTabList.Enabled then
+			starterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, true)
+		end
+	else
+		lplr.PlayerGui.hotbar['1'].ItemsHotbar['10'].Visible = true
+
+		for i,v in lplr.PlayerGui.hotbar['1'].ItemsHotbar:GetChildren() do
+			v:FindFirstChildOfClass('TextLabel').Visible = true
+		end
+
+		lplr.PlayerGui.KillFeedGui.Enabled = true
+		starterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
+	end
+end
+
 UICleanup = vape.Legit:CreateModule({
 	Name = 'UI Cleanup',
 	Function = function(callback)
+		if ce then
+			clean(callback)
+			return
+		end
+
 		for i, v in (callback and new or old) do
 			for i2, v2 in v do
 				debug.setconstant(i, i2, v2)
 			end
 		end
+
 		if callback then
 			if OpenInv.Enabled and HotbarOpenInventory then
 				oldinvrender = HotbarOpenInventory.render
@@ -82,24 +134,28 @@ UICleanup = vape.Legit:CreateModule({
 	end,
 	Tooltip = 'Cleans up the UI for kits & main'
 })
-UICleanup:CreateToggle({
-	Name = 'Resize Health',
-	Function = function(callback)
-		modifyconstant(HotbarApp, 60, callback and 1 or nil)
-		if not ce then
+if not ce then
+	UICleanup:CreateToggle({
+		Name = 'Resize Health',
+		Function = function(callback)
+			modifyconstant(HotbarApp, 60, callback and 1 or nil)
 			modifyconstant(debug.getupvalue(HotbarApp, 15).render, 30, callback and 1 or nil)
 			modifyconstant(debug.getupvalue(HotbarApp, 23).tweenPosition, 16, callback and 0 or nil)
-		end
-	end,
-	Default = true
-})
-UICleanup:CreateToggle({
+		end,
+		Default = true
+	})
+end
+NoHotbar = UICleanup:CreateToggle({
 	Name = 'No Hotbar Numbers',
 	Function = function(callback)
-		local func = oldinvrender or (HotbarOpenInventory and HotbarOpenInventory.render)
-		if not ce then
-			modifyconstant(debug.getupvalue(HotbarApp, 23).render, 90, callback and 0 or nil)
+		if ce then
+			UICleanup:Toggle()
+			UICleanup:Toggle()
+			return
 		end
+
+		local func = oldinvrender or (HotbarOpenInventory and HotbarOpenInventory.render)
+		modifyconstant(debug.getupvalue(HotbarApp, 23).render, 90, callback and 0 or nil)
 		modifyconstant(func, 71, callback and 0 or nil)
 	end,
 	Default = true
@@ -107,6 +163,12 @@ UICleanup:CreateToggle({
 OpenInv = UICleanup:CreateToggle({
 	Name = 'No Inventory Button',
 	Function = function(callback)
+		if ce then
+			UICleanup:Toggle()
+			UICleanup:Toggle()
+			return
+		end
+
 		modifyconstant(HotbarApp, 78, callback and 0 or nil)
 		if UICleanup.Enabled and HotbarOpenInventory then
 			if callback then
@@ -126,6 +188,11 @@ KillFeed = UICleanup:CreateToggle({
 	Name = 'No Kill Feed',
 	Function = function(callback)
 		if UICleanup.Enabled then
+			if ce then
+				lplr.PlayerGui.KillFeedGui.Enabled = callback
+				return
+			end
+
 			if callback then
 				oldkillfeed = bedwars.KillFeedController.addToKillFeed
 				bedwars.KillFeedController.addToKillFeed = function() end
@@ -146,12 +213,12 @@ OldTabList = UICleanup:CreateToggle({
 	end,
 	Default = true
 })
-UICleanup:CreateToggle({
-	Name = 'Fix Queue Card',
-	Function = function(callback)
-		if not ce then
+if not ce then
+	UICleanup:CreateToggle({
+		Name = 'Fix Queue Card',
+		Function = function(callback)
 			modifyconstant(bedwars.QueueCard.render, 15, callback and 0.1 or nil)
-		end
-	end,
-	Default = true
-})
+		end,
+		Default = true
+	})
+end

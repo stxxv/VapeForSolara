@@ -151,9 +151,35 @@ Regenerate that file with `compiler.lua` running in a live match; it is large (~
   30×6×9 studs, and a bed is a 3×3×3 `MeshPart`. In a live match ~2275 parts tagged `block`
   cover ~103k cells. Filtering by `Size == Vector3.one * 3` (which the index used to do) hides
   most of the map — that is what made Breaker work on beds and nothing else.
+- `bedwars.breakBlock` targets the part's **nearest cell to the player**, not the part's own
+  position. On a merged part the centre cell is surrounded by the rest of the same part, so
+  `calculatePath` never finds an air neighbour and the breaker silently gives up — that is why
+  Breaker only ever reached beds and single blocks.
+- `BlockController:isBlockBreakable` is not "true": the engine rejects a `NoBreak` part, and the
+  game hooks the check to cancel `Team<N>NoBreak` (your own bed — verified live: every bed part
+  carries `Team<N>NoBreak` matching its `TeamId`, and the local player's `Team` attribute is the
+  same number) and `Player<UserId>NoBreak` (blocks you may not break).
+- One break swing at a time. `bedwars.breakBlock` is called at the module's update rate, so a
+  fresh animation track per call stacks up and the arm keeps swinging after the target leaves
+  range; the emulation keeps a single swing and stops both the player and the viewmodel track.
 - `getPlacedBlock(pos)` (base.lua) is the module-facing wrapper: it takes a **world** position
   and returns `(instance, gridPosition)`. `sides` holds the six `Enum.NormalId * 3` world
   offsets, so `calculatePath` keys its maps in world space and hands back world positions.
+
+- **Never raycast for a block without skipping `gamecore_GameQueryIgnore`.** The game parents
+  its own visuals into Workspace (the block highlight box, break effects, lobby props) and
+  marks each with that attribute so its queries step over them
+  (`GameQueryUtil:isQueryIgnored`). They are ordinary queryable parts, so a plain
+  `workspace:Raycast` lands on the highlight box hovering over the highlighted block — that is
+  why the emulated selector used to answer for a different block than the one on screen.
+- The emulated selector resolves a **greedy** part (`GreedyBlock` attribute) the way the real
+  one does: the cell comes straight from the hit point via `roundBlockPos`, never from walking
+  `getContainedPositions` — that walk is thousands of cells on a 30×6×9 part, at click rate.
+  Everything else (beds, ore) goes through the nearest contained cell.
+- `BlockPlacer:placeBlock(cell, mouseInfo)` takes **grid**. Callers that pass no mouseInfo
+  (AutoClicker, Schematica) get one filled in from the player's own highlight: `getMouseInfo(0)`
+  is used only when its `placementPosition` is the cell being placed, so the placement carries
+  the same target and face the player can see highlighted.
 
 **Only cells are keys.** `findBlock` answers for every cell a part covers, so beds, lucky
 blocks and iron ore on the 3-stud grid are found like any other block. `bedwars.breakBlock`
@@ -178,8 +204,13 @@ Thing:CreateDropdown({Name = '…', List = {'…'}})
 Thing:CreateTextList({Name = '…', Function = …})
 ```
 
-- Indent with **tabs**; files are **CRLF**. Match the surrounding file exactly when editing —
-  replacements that assume `\n` will not match.
+- Indent with **tabs**. Match the surrounding file exactly when editing — replacements that
+  assume the wrong line endings will not match. Check before assuming: `construct.lua` is LF.
+- **Do not break a method chain across lines** (`bedwars.X` / `:Get(…)` / `:CallServer(…)` on
+  separate lines) and do not split a short `a and b or c` over three lines. Keep the chain on
+  one statement — hoist the remote into a local if it gets long. `stylua`'s 120-column default
+  would re-wrap both, so `stylua --check` reports those deliberate lines and nothing else on an
+  otherwise clean file: read its diff, never "fix" it by re-wrapping.
 - Every module needs a `Tooltip`.
 - Modules that depend on executor capabilities gate at the very top:
   ```lua
@@ -188,6 +219,31 @@ Thing:CreateTextList({Name = '…', Function = …})
   This is valid because each module is wrapped in `run(function() … end)`, so the `return` only
   exits that module. `NoClickDelay`, `Reach`, `ProjectileAimbot`, `FastBreak`, `KeepSprint`,
   `Velocity` and `NoSlowdown` currently do this.
+
+## Emulation coverage
+
+Checked against the live client (`@easy-games.block-engine` and the `TS` controllers) and the
+emulated surface in `construct.lua`. A module only belongs in this table once the thing it
+patches actually exists on the ce path.
+
+| Module | On ce | Why |
+| --- | --- | --- |
+| NoClickDelay | works | patches `SwordController.isClickingTooFast`, which the emulation defines and the swing path calls |
+| NoSlowdown | works | `SprintController:getMovementStatusModifier()` is emulated with `modifiers` / `addModifier` / `removeModifier` |
+| Crosshair | works | no constant to patch, so it sets `ViewmodelController.crosshairImage`, the image the controller shows |
+| UI Cleanup | works | hotbar app cannot be required on ce, so the rendered `PlayerGui` is cleaned instead and re-applied every 0.25 s (Roact resets the props it owns) |
+| Velocity | works | already has a ce branch: it writes the `ConstantManager_kb*` attributes the real knockback module reads |
+| ProjectileAimbot | feasible | the emulation provides `ProjectileController:calculateImportantLaunchValues` / `getLaunchPosition`; still needs `prediction` and `targetinfo` confirmed as globals the module can see |
+| FastConsume | feasible | `ClickHold` is emulated, but it builds its bar inside `new()`; the hold has to go through `startClick` before the module's patch means anything |
+| FastBreak | redundant | `setCooldown` lowers a cooldown the emulated `breakBlock` does not have — Breaker's Break speed is the throttle |
+| KeepSprint | redundant | the constant picks which event clears `blockSprint`, and the emulation only sets it from movement modifiers |
+| HitFix | redundant | the emulated `swingSwordAtMouse` already raycasts the way the fixed version does |
+| Reach | no | mutates `CombatConstant.RAYCAST_SWORD_CHARACTER_DISTANCE`, a client-side value the server does not trust |
+| DamageIndicator | no | needs the real `DamageIndicator` table via `debug.getupvalue`; the emulation is a no-op function |
+| WinEffect | no | needs `getconnections` on the `WinEffectTriggered` listener |
+| AutoKit `block_kicker` | no | needs the real `BlockKickerKitController` |
+
+`VapeCompiled/` is generated and updated by the build — never hand-edit or copy files into it.
 
 ## Verification
 

@@ -4,7 +4,16 @@ local Image
 local Crosshair = vape.Legit:CreateModule({
 	Name = 'Crosshair',
 	Function = function(callback)
-		if ce then return end
+		if ce then
+			bedwars.ViewmodelController.crosshairImage = callback and Image.Value or bedwars.CrosshairImage
+			if bedwars.ViewmodelController.crosshair then
+				bedwars.ViewmodelController:hideCrosshair()
+				bedwars.ViewmodelController:showCrosshair()
+			end
+			
+			return
+		end
+
 		if callback then
 			old = debug.getconstant(bedwars.ViewmodelController.showCrosshair, 25)
 			debug.setconstant(bedwars.ViewmodelController.showCrosshair, 25, Image.Value)
