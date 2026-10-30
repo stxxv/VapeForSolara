@@ -52,17 +52,17 @@ HitBoxes = vape.Categories.Blatant:CreateModule({
 	Tooltip = 'Expands attack hitbox'
 })
 if not ce then
-Mode = HitBoxes:CreateDropdown({
-	Name = 'Mode',
-	List = {'Sword', 'Player'},
-	Function = function()
-		if HitBoxes.Enabled then
-			HitBoxes:Toggle()
-			HitBoxes:Toggle()
-		end
-	end,
-	Tooltip = 'Sword - Increases the range around you to hit entities\nPlayer - Increases the players hitbox'
-})
+	Mode = HitBoxes:CreateDropdown({
+		Name = 'Mode',
+		List = {'Sword', 'Player'},
+		Function = function()
+			if HitBoxes.Enabled then
+				HitBoxes:Toggle()
+				HitBoxes:Toggle()
+			end
+		end,
+		Tooltip = 'Sword - Increases the range around you to hit entities\nPlayer - Increases the players hitbox'
+	})
 end
 Expand = HitBoxes:CreateSlider({
 	Name = 'Expand amount',
