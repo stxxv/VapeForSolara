@@ -58,7 +58,9 @@ UICleanup = vape.Legit:CreateModule({
 
 				if NoHotbar.Enabled then
 					for i,v in lplr.PlayerGui.hotbar['1'].ItemsHotbar:GetChildren() do
-						v:FindFirstChildOfClass('TextLabel').Visible = false
+						if v:IsA('Frame') then
+							v['1']:FindFirstChildOfClass('TextLabel').Visible = false
+						end
 					end
 
 					UICleanup:Clean(lplr.PlayerGui.ChildAdded:Connect(function(obj)
@@ -81,7 +83,9 @@ UICleanup = vape.Legit:CreateModule({
 				lplr.PlayerGui.hotbar['1'].ItemsHotbar['10'].Visible = true
 
 				for i,v in lplr.PlayerGui.hotbar['1'].ItemsHotbar:GetChildren() do
-					v['1']:FindFirstChildOfClass('TextLabel').Visible = true
+					if v:IsA('Frame') then
+						v['1']:FindFirstChildOfClass('TextLabel').Visible = true
+					end
 				end
 
 				lplr.PlayerGui.KillFeedGui.Enabled = true
