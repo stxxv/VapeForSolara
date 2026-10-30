@@ -15,8 +15,8 @@ NoFall = vape.Categories.Blatant:CreateModule({
 						runService.PreSimulation:Wait()
 						root.AssemblyLinearVelocity = Vector3.new(root.AssemblyLinearVelocity.X, oldVelo, root.AssemblyLinearVelocity.Z)
 					end
-				end))
-			end
+				end
+			end))
 		end
 	end,
 	Tooltip = 'Prevents taking fall damage.'
