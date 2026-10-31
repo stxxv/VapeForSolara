@@ -66,7 +66,9 @@ UICleanup = vape.Legit:CreateModule({
 					UICleanup:Clean(lplr.PlayerGui.ChildAdded:Connect(function(obj)
 						if obj.Name == 'hotbar' then
 							for i,v in obj['1'].ItemsHotbar:GetChildren() do
-								v['1']['1'].Visible = NoHotbar.Enabled
+								if v:IsA('Frame') then
+									v['1']['1'].Visible = NoHotbar.Enabled
+								end
 							end
 						end
 					end))

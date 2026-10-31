@@ -10,7 +10,7 @@ NoFall = vape.Categories.Blatant:CreateModule({
 					oldVelo = root.AssemblyLinearVelocity.Y
 					if root.AssemblyLinearVelocity.Y < -45 then
 						root.AssemblyLinearVelocity = Vector3.new(root.AssemblyLinearVelocity.X, 44, root.AssemblyLinearVelocity.Z)
-						lplr.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Landed)
+						entitylib.character.Humanoid:ChangeState(Enum.HumanoidStateType.Landed)
 
 						runService.PreSimulation:Wait()
 						root.AssemblyLinearVelocity = Vector3.new(root.AssemblyLinearVelocity.X, oldVelo, root.AssemblyLinearVelocity.Z)
