@@ -186,7 +186,7 @@ OpenInv = UICleanup:CreateToggle({
 			if UICleanup.Enabled then
 				lplr.PlayerGui.hotbar['1'].ItemsHotbar['10'].Visible = not callback
 			end
-			
+
 			return
 		end
 
