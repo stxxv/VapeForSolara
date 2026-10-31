@@ -116,6 +116,24 @@ UICleanup = vape.Legit:CreateModule({
 				bedwars.KillFeedController.addToKillFeed = function() end
 			end
 
+			if NoHotbar.Enabled then
+				for i,v in lplr.PlayerGui.hotbar['1'].ItemsHotbar:GetChildren() do
+					if v:IsA('Frame') then
+						v['1']['1'].Visible = false
+					end
+				end
+
+				UICleanup:Clean(lplr.PlayerGui.ChildAdded:Connect(function(obj)
+					if obj.Name == 'hotbar' then
+						for i,v in obj['1'].ItemsHotbar:GetChildren() do
+							if v:IsA('Frame') then
+								v['1']['1'].Visible = NoHotbar.Enabled
+							end
+						end
+					end
+				end))
+			end
+
 			if OldTabList.Enabled then
 				starterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, true)
 			end
@@ -141,8 +159,8 @@ if not ce then
 	UICleanup:CreateToggle({
 		Name = 'Resize Health',
 		Function = function(callback)
-			modifyconstant(HotbarApp, 60, callback and 1 or nil)
-			modifyconstant(debug.getupvalue(HotbarApp, 15).render, 30, callback and 1 or nil)
+			modifyconstant(HotbarApp, 63, callback and 1 or nil)
+			modifyconstant(debug.getupvalue(HotbarApp, 15).render, 31, callback and 1 or nil)
 			modifyconstant(debug.getupvalue(HotbarApp, 23).tweenPosition, 16, callback and 0 or nil)
 		end,
 		Default = true
@@ -151,15 +169,11 @@ end
 NoHotbar = UICleanup:CreateToggle({
 	Name = 'No Hotbar Numbers',
 	Function = function(callback)
-		if ce then
-			UICleanup:Toggle()
-			UICleanup:Toggle()
-			return
+		for i,v in lplr.PlayerGui.hotbar['1'].ItemsHotbar:GetChildren() do
+			if v:IsA('Frame') then
+				v['1']['1'].Visible = not callback
+			end
 		end
-
-		local func = oldinvrender or (HotbarOpenInventory and HotbarOpenInventory.render)
-		modifyconstant(debug.getupvalue(HotbarApp, 23).render, 90, callback and 0 or nil)
-		modifyconstant(func, 71, callback and 0 or nil)
 	end,
 	Default = true
 })
@@ -167,12 +181,10 @@ OpenInv = UICleanup:CreateToggle({
 	Name = 'No Inventory Button',
 	Function = function(callback)
 		if ce then
-			UICleanup:Toggle()
-			UICleanup:Toggle()
+			lplr.PlayerGui.hotbar['1'].ItemsHotbar['10'].Visible = not callback
 			return
 		end
 
-		modifyconstant(HotbarApp, 78, callback and 0 or nil)
 		if UICleanup.Enabled and HotbarOpenInventory then
 			if callback then
 				oldinvrender = HotbarOpenInventory.render
@@ -192,7 +204,7 @@ KillFeed = UICleanup:CreateToggle({
 	Function = function(callback)
 		if UICleanup.Enabled then
 			if ce then
-				lplr.PlayerGui.KillFeedGui.Enabled = callback
+				lplr.PlayerGui.KillFeedGui.Enabled = not callback
 				return
 			end
 

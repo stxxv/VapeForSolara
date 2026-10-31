@@ -13,10 +13,10 @@ local function AutoClick()
 			if not bedwars.AppController:isLayerOpen(bedwars.UILayers.MAIN) then
 				local blockPlacer = bedwars.BlockPlacementController.blockPlacer
 				if store.hand.toolType == 'block' and blockPlacer then
-					if (workspace:GetServerTimeNow() - bedwars.BlockCpsController.lastPlaceTimestamp) >= ((1 / 12) * 0.5) then
+					if (workspace:GetServerTimeNow() - bedwars.BlockCpsController.lastPlaceTimestamp) >= (1 / 12) then
 						local mouseinfo = blockPlacer.clientManager:getBlockSelector():getMouseInfo(0)
 						if mouseinfo and mouseinfo.placementPosition == mouseinfo.placementPosition then
-							task.spawn(blockPlacer.placeBlock, blockPlacer, mouseinfo.placementPosition)
+							task.spawn(blockPlacer.placeBlock, blockPlacer, mouseinfo.placementPosition, mouseinfo)
 						end
 					end
 				elseif store.hand.toolType == 'sword' then

@@ -172,7 +172,20 @@ end
 getgenv().getItem = getItem	
 
 local function getRoactRender(func)
-	return (debug.getupvalue and debug.getupvalue(debug.getupvalue(debug.getupvalue(func, 3).render, 2).render, 1)) or nil
+	-- the roact-hooks wrapper used to bury the hooks render three component tables deep;
+	-- its render method now carries the closure as upvalue 1, so try the old drill first
+	-- and fall through to the direct upvalue
+	local ok, inner = pcall(function()
+		return debug.getupvalue(debug.getupvalue(debug.getupvalue(func, 3).render, 2).render, 1)
+	end)
+	if ok and type(inner) == 'function' then
+		return inner
+	end
+	local okDirect, hooksRender = pcall(debug.getupvalue, func, 1)
+	if okDirect and type(hooksRender) == 'function' then
+		return hooksRender
+	end
+	return nil
 end
 
 local function getSword()

@@ -16,10 +16,9 @@ if not ce then
 		Function = function(callback)
 			if callback then
 				oldvalues = table.clone(tab)
-				oldfont = debug.getconstant(bedwars.DamageIndicator, 86)
-				debug.setconstant(bedwars.DamageIndicator, 86, Enum.Font[FontOption.Value])
-				debug.setconstant(bedwars.DamageIndicator, 119, Stroke.Enabled and 'Thickness' or 'Enabled')
-				tab.strokeThickness = Stroke.Enabled and 1 or false
+				oldfont = debug.getconstant(bedwars.DamageIndicator, 67)
+				debug.setconstant(bedwars.DamageIndicator, 67, Enum.Font[FontOption.Value])
+				tab.strokeThickness = Stroke.Enabled and 1.5 or 0
 				tab.textSize = Size.Value
 				tab.blowUpSize = Size.Value
 				tab.blowUpDuration = 0
@@ -30,8 +29,7 @@ if not ce then
 				for i, v in oldvalues do
 					tab[i] = v
 				end
-				debug.setconstant(bedwars.DamageIndicator, 86, oldfont)
-				debug.setconstant(bedwars.DamageIndicator, 119, 'Thickness')
+				debug.setconstant(bedwars.DamageIndicator, 67, oldfont)
 			end
 		end,
 		Tooltip = 'Customize the damage indicator'
@@ -47,7 +45,7 @@ if not ce then
 		List = fontitems,
 		Function = function(val)
 			if DamageIndicator.Enabled then
-				debug.setconstant(bedwars.DamageIndicator, 86, Enum.Font[val])
+				debug.setconstant(bedwars.DamageIndicator, 67, Enum.Font[val])
 			end
 		end
 	})
@@ -87,8 +85,7 @@ if not ce then
 		Name = 'Stroke',
 		Function = function(callback)
 			if DamageIndicator.Enabled then
-				debug.setconstant(bedwars.DamageIndicator, 119, callback and 'Thickness' or 'Enabled')
-				tab.strokeThickness = callback and 1 or false
+				tab.strokeThickness = callback and 1.5 or 0
 			end
 		end
 	})

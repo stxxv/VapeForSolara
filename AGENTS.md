@@ -245,6 +245,100 @@ patches actually exists on the ce path.
 
 `VapeCompiled/` is generated and updated by the build — never hand-edit or copy files into it.
 
+## Real-client specs (verified live, treat as the spec)
+
+The decompiled client under `ReplicatedStorage.rbxts_include.node_modules.@easy-games.block-engine`
+is the source of truth for the emulated surface. Verified 2026-10-31 with the Real MCP against the
+live client (executor identifies as "Solara", so `ceCheck()` is true and the ce emulation is what
+runs):
+
+- **Block healthbar** — the real `BlockBreaker.updateHealthbar` delegates to the engine's
+  `BlockHealthbar` (`out/client/break/block-healthbar`): a `BillboardGui` of
+  `UDim2.fromScale(4, 0.2)` over the block (part named `BlockHealthbar`, parented **to the block
+  instance**), a black `BackgroundTransparency 0.3` frame and a green
+  `RGB(39, 231, 68)` fill, tweened per hit with `TweenInfo(cooldown, Quad)` (cooldown 0.3), a 5 s
+  runId-guarded cleanup, and an `AttributeChanged` connection on the block's `BlockData` entry that
+  re-tweens when the server writes new damage. The server does **not** send `BlockHealthbarUpdate`
+  for a predicted `DamageBlock` (inbound-spy, seen 0), so the ce path has to draw the bar itself —
+  `bedwars.BlockBreaker.updateHealthbar` in construct.lua is a faithful port of that component.
+- **Selector fallback** — the real downward search (block-selector, PLACE mode): find the floor
+  block below you (3 steps of `BLOCK_SIZE`), create a `30x1x30 * BLOCK_SIZE` invisible plane over
+  it rotated by the world normal, cast the **same camera ray** at it, then walk from the floor cell
+  toward the hit point to the first air cell and return `{placementPosition = cell}` — target-less.
+  A sky-stare camera ray never crosses the plane, so it answers `nil` and nothing is placed. A
+  `denyPlaceOn` block under the crosshair returns `nil` immediately, no fallback. `allowVoidSave`
+  searches the 8 horizontal neighbours instead. The old emulation answered
+  `floorCell + worldNormal` — the cell your own legs occupy — which is what sent
+  "PlaceBlock going up" and crashed AutoClicker users.
+- **Target-less mouseBlockInfo is legitimate** — the real `BlockPlacer:placeBlock` rebuilds
+  mouseBlockInfo field-by-field and sends `target = nil` when the selector's answer had none; the
+  server's `isServerAllowedPlacement` reads `target.target.blockInstance.Name` nil-safely. Do not
+  re-add a `not mouseInfo.target` rejection in `bedwars.placeBlock`.
+- **Placement gate** — the real `isClientAllowedPlacement` (block-engine shared) runs, in order:
+  handler exists; head not in any of the placement cells; **body-column check** (feet cell from
+  `pivot - (0, HipHeight/2, 0)`, height `round(BodyHeightScale * 2)`, reject the column unless the
+  cell above your head is occupied — that exception is what allows the jump-place); the same
+  column check for every other player (height `round(BodyDepthScale * 2)`, exact cell equality).
+  The emulated gate implements all of these now; the head-only version was how placements into
+  yourself got sent.
+- **One bar, two sources** — the server never drives the bar for vape breaks, but *your manual
+  breaks* predict locally and the real BlockHealthbar mounts a part literally named
+  `BlockHealthbar` onto the block. The emulated bar therefore names its part
+  `VapeBlockHealthbar` and yields (cleans itself) whenever the block already has a real
+  `BlockHealthbar` child — otherwise manual breaks + Breaker on the same block stack two bars.
+- **The emulated sword raycasts through `bedwars.QueryUtil:raycast`** (both `swingSwordAtMouse`
+  and `canSee`). The real client casts through GameQueryUtil, which steps over query-ignored
+  visuals; a plain `workspace:Raycast` hits them — that is what HitFix patches in on full
+  executors, and it is built in on ce now. `QueryUtil.ADJUST_CAN_QUERY` is false, so
+  attribute-marked parts stay `CanQuery = true` and still catch plain raycasts — any part the
+  emulation parents into the world for adornment (the healthbar part) must also set
+  `CanQuery = false` itself.
+- **The emulated Maid runs functions only — connections must be disconnected, not spawned.**
+  `newMaid` now mirrors the real Maid (functions spawn, `RBXScriptConnection` disconnects,
+  instances destroy). The old version threw on a connection mid-`DoCleaning`, which skipped
+  `table.clear` and grew the task list forever — the healthbar's `AttributeChanged` connection
+  leaked two task entries per mount and its cleanup never ran.
+
+## Constants audit (verified live 2026-10-31, place version 4221)
+
+`debug.getconstants` indices for every hardcoded patch in the `if not ce` modules, dumped from the
+live client via `filtergc` + distinctive-constant filters. Re-verify after any game update — these
+shift silently:
+
+| Target | Constant | Index | Holds |
+| --- | --- | --- | --- |
+| `HotbarHealthbar.render` | Health Font | **63** | `'LuckiestGuy'` (was 77) |
+| `HotbarHealthbar.render` | Health Color | 16 | `13317668` — unchanged |
+| hotbar-app hooks render, upvalue 23 (`.render`) | slot background | **71** | `1909806` (was 51) |
+| 〃 | slot border | **78** | `7503788` (was 58) |
+| 〃 | slot transparencies | **74 / 75** | `0.2` / `0.4` (was 54 / 55) |
+| 〃 | number label | 90 | `0.1` — unchanged |
+| 〃 (`.tweenPosition`) | Resize Health offset | 16 | `-0.075` — unchanged |
+| hotbar-app hooks render, upvalue 15 (`HotbarHealthbar.render`) | healthbar width | **31** | `0.85` (was 30) |
+| hotbar-app hooks render (direct) | container width | **63** | `0.6` (was 60) |
+| `HotbarOpenInventory.render` | button background | **35** | `1909806` (was 31) |
+| 〃 | button transparency | **25** | `0.4` (was 32) |
+| 〃 | button border | **36** | `7503788` (was 34) |
+| 〃 | old "No Hotbar Numbers" 71 | — | **no equivalent**, dropped |
+| `QueueCard.render` | Fix Queue Card | 15 | `0.01` — unchanged |
+| real `spawnDamageIndicator` | Font | **67** | `Enum.Font.GothamBlack` (was 86) |
+| real `spawnDamageIndicator` | stroke flip 119 | — | **gone** (85 constants) — the stroke is a UIStroke built from `strokeThickness` in the registry; flip = write `1.5` / `0` |
+| real `swingSwordAtMouse` | HitFix | 23 | `'Raycast'`, upvalue 4 = `Workspace` — unchanged |
+
+Structural notes from the same audit:
+
+- **`getRoactRender` changed**: the roact-hooks render method now carries the hooks closure as
+  **upvalue 1** (the old 3-level component drill dead-ends — its render method has a single
+  upvalue). base.lua tries the old drill first and falls back to the direct upvalue.
+- **ConstantManager has two read shapes**: `registerConstants(script, table)` — knockback-util's
+  consumers read **attributes** (`ConstantManager_kb*` on the script, what Velocity writes), while
+  the damage-indicator's `spawnDamageIndicator` reads the **plain registry table** it captured as
+  upvalue 2 (no metatable — table writes work, attribute writes do nothing). Check which shape a
+  target uses before patching.
+- `filtergc`'s `Source` filter is unreliable here (matched one script's `TS.`-prefixed path but not
+  others'); prefer a distinctive-constant filter (e.g. `{'DamageIndicatorPart'}`, `{1909806,
+  7503788}`, `{7.372093023255814}`) plus a `debug.getinfo` source check.
+
 ## Verification
 
 There is **no Luau toolchain in this repo** — no `luau`, `luau-analyze`, or usable `lua` (the
@@ -275,15 +369,19 @@ therefore:
   `BlockEngine:isAllowedPlacement` and only places at its own cadence. Scaffold calls
   `bedwars.placeBlock` once per expand step per 0.03 s tick, so without the same gate the
   emulation fires dozens of blocking `PlaceBlock` invokes a second the moment placements start
-  succeeding. `placeBlock` keeps a 0.05 s floor, remembers cells it filled for 0.5 s (the index
-  lags 0.15 s, so a just-filled cell still looks empty), and does every yielding step — item
-  switch, remote call — off the caller's thread with the result `pcall`ed.
+  succeeding. The throttle is the gate itself (`blockParts` occupancy + `pendingPlacements`,
+  0.25 s per cell — the stand-in for the local preview block the real placer creates), and every
+  yielding step — item switch, remote call — runs off the caller's thread with the result
+  `pcall`ed. A global rate floor (`canPlaceNow`, 0.05 s) existed once and was removed on purpose;
+  do not re-add it, it halved Scaffold's rate. AutoClicker paces itself against the server's
+  12 CPS cap (`lastPlaceTimestamp`, full `1 / 12` interval).
 - **Remote shapes differ.** `PlaceBlock` and `DamageBlock` are `RemoteFunction`s
   (`CallServer` → `InvokeServer`, and the result comes back directly — do not chain `:andThen`
-  on it); `SwordHit`, `SwordSwingMiss` and the rest are `RemoteEvent`s. A placement is only
-  accepted with `{blockType, position, blockData, mouseBlockInfo}`, where `mouseBlockInfo` is
-  `{target = {blockRef, hitPosition, hitNormal}, placementPosition}` — without it the server
-  cancels the placement, silently.
+  on it); `SwordHit`, `SwordSwingMiss` and the rest are `RemoteEvent`s. A placement is sent as
+  `{blockType, position, blockData, mouseBlockInfo}`, where `mouseBlockInfo` is
+  `{target = {blockRef, hitPosition, hitNormal}, placementPosition}` — but a **target-less
+  mouseBlockInfo is valid**: the real placer sends `target = nil` for the selector's downward
+  answer and the server reads it nil-safely (see "Real-client specs").
 - **A missed swing still sends.** The real controller routes hits *and* misses through
   `attackEntity(nil, …)`: a miss plays the swing and fires `SwordSwingMiss`
   (`{weapon, chargeRatio}`, 20 a second server side). Skipping it desyncs the game's own swing
@@ -299,3 +397,21 @@ therefore:
   two boundaries; everything string compared, cached or sent as a `blockRef` is grid.
 - **`getBlocksInPoints`** must walk the store, not the `(2*range)^3` cube it covers: that was
   ~74k lookups per call and Scaffold makes several per 0.03 s tick.
+- **Executor-probing with the Real MCP.** The executor identifies as "Solara" (`getexecutorname`),
+  so the ce emulation is the live path. `getgenv()` does **not** return a stable table identity
+  there — a chunk's writes can be invisible from another chunk's `getgenv()` view. To reach the
+  tables the modules actually use, call `getfenv(vape.Modules.Breaker.Function)` and read
+  `bedwars`/`store` from that environment; `getgenv().bedwars` can read as an empty table while
+  the emulation is fully live.
+- **The mega place loads the main game.** `src/games/bedwars/8444591321 - mega.lua` sets
+  `vape.Place = 6872274481`, so in the mega place the built `games/8444591321.lua` bootstraps the
+  built `games/6872274481.lua` — every main-game module (Breaker, AutoClicker, …) runs there.
+- **`VapeCompiled` on GitHub is a different repo** (`stxxv/VapeCompiled`): the commit in
+  `newvape/profiles/commit.txt` is that repo's history, not this one's. The executor's workspace
+  cache can therefore be an older build than the local tree — verify with a marker grep before
+  trusting a live readout.
+- **UICleanup's ce branch can error before its toggles exist.** The module `Function` reads
+  `OpenInv.Enabled` / `NoHotbar.Enabled`, but those locals are only assigned by the
+  `CreateToggle` calls further down the file; a saved-state Load or a toggle that lands early
+  throws `attempt to index nil with 'Enabled'` (built line ~7776). Known, unfixed — if it is
+  ever fixed, gate the ce branch on the toggle locals being set, not on `pcall`.
