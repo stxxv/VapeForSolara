@@ -10,7 +10,7 @@ Working notes for anyone (human or agent) making changes here. Read this before 
 | `VapeForSolara/src/games/` | Per-place game folders; `bedwars/6872274481 - game/` is the main one. |
 | `VapeForSolara/src/libraries/bedwars/` | `construct.lua`, `construct.json`, `compiler.lua`. |
 | `VapeBundler/` | The build tool (Node, `helpers/*.js`). |
-| `VapeCompiled/` | The **build output**. Generated — do not hand-edit. |
+| `VapeCompiled/` | The **build output**. Generated — do not hand-edit. Read it (never write to it) when matching existing patterns. |
 | `src/libraries/bedwars/compiler.lua` | Captures live game metadata into `construct.json` (run inside the executor). |
 
 The output directory is what gets uploaded into the executor's workspace under `newvape/`:
@@ -22,6 +22,18 @@ newvape/guis/new.lua
 newvape/libraries/bedwars/construct.lua
 newvape/libraries/bedwars/construct.json
 ```
+
+## Matching existing patterns
+
+Load the `match-existing-patterns` skill before editing code.
+
+When you need an existing pattern to copy, do not use `construct.lua`, `construct.json` or
+`compiler.lua`. Read the compiled game file in `VapeCompiled/newvape/games/<placeId>.lua`
+instead (the main game is `6872274481.lua`) and copy the pattern from there.
+
+This only covers what you use as a reference. When the task is the emulation itself, you still
+edit `src/libraries/bedwars/construct.lua` as the source. If `VapeCompiled/` looks older than
+`src/`, rebuild first (see Building) so you aren't copying a stale pattern.
 
 ## Building
 
