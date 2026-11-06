@@ -208,7 +208,8 @@ run(function()
 
 									if not AttackDelay[v] then
 										AttackDelay[v] = {
-											Attack = 0
+											Attack = 0,
+											Delay = 0
 										}
 									end
 
@@ -217,6 +218,7 @@ run(function()
 										local delay = (Hitreg.Value == 'Dynamic' and math.clamp(math.min(hitreg / 4, 1 / 30), 1 / 60, 0.1)) or 0.3
 
 										AttackDelay[v].Attack = os.clock() + delay
+										AttackDelay[v].Delay = delay
 
 										AttackRemote:FireServer({
 											weapon = sword.tool,
@@ -287,6 +289,12 @@ run(function()
 				end
 			end
 		end,
+		ExtraText = function()
+			if not select(2, getAttackData()) then return '0ms' end
+			
+			return math.round(calcHitreg(select(2, getAttackData())) * 1000)..'ms'
+		end,
+
 		Tooltip = 'Attack players around you\nwithout aiming at them.'
 	})
 	Hitreg = Killaura:CreateDropdown({
