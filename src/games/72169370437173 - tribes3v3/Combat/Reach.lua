@@ -19,13 +19,8 @@ Reach = vape.Categories.Combat:CreateModule({
 Value = Reach:CreateSlider({
 	Name = 'Range',
 	Min = 0,
-<<<<<<< HEAD
-	Max = 4,
-	Default = 4,
-=======
 	Max = 3,
 	Default = 3,
->>>>>>> upstream/main
 	Suffix = function(val)
 		return val == 1 and 'stud' or 'studs'
 	end
