@@ -37,20 +37,96 @@ local tribes = {}
 local HitboxHook = {Hooks = {}}
 local VelocityTracker = {Entries = setmetatable({}, {__mode = 'k'})}
 local isMatch = false
-local realInput
+local clickQueue = {}
+local clickThread = nil
 
-local function dumpInput()
-	if not realInput then
-		local connection
-		connection = inputService.InputEnded:Connect(function(input)
-			if input.KeyCode == Enum.KeyCode.Return then
-				realInput = input
-				connection:Disconnect()
+local function canClickButton(target)
+	if (not target.Visible) and (not guiService.MenuIsOpen) then
+		return false
+	end
+
+	local pos = target.AbsolutePosition + target.AbsoluteSize / 2
+	if gethui and gethui():IsA('BasePlayerGui') then
+		for _, obj in gethui():GetGuiObjectsAtPosition(pos.X, pos.Y) do
+			if obj:IsA('GuiButton') then
+				return obj == target
 			end
-		end)
+		end
+	end
 
-		vim:SendKeyEvent(true, Enum.KeyCode.Return, false, nil)
-		vim:SendKeyEvent(false, Enum.KeyCode.Return, false, nil)
+	for _, obj in coreGui:GetGuiObjectsAtPosition(pos.X, pos.Y) do
+		if obj:IsA('GuiButton') then
+			return obj == target
+		end
+	end
+
+	for _, obj in lplr.PlayerGui:GetGuiObjectsAtPosition(pos.X, pos.Y) do
+		if obj:IsA('GuiButton') then
+			return obj == target
+		end
+	end
+
+	return false
+end
+
+local function clickButton(obj)
+	if not (obj and obj:IsA('TextButton')) then
+		return
+	end
+
+	if not table.find(clickQueue, obj) then
+		table.insert(clickQueue, obj)
+
+		if not clickThread then
+			task.spawn(function()
+				clickThread = coroutine.running()
+
+				repeat
+					local i, button = next(clickQueue)
+					if i then
+						table.remove(clickQueue, i)
+
+						if canClickButton(button) then
+							local cPos = (button.AbsolutePosition + button.AbsoluteSize / 2) + guiService:GetGuiInset()
+
+							if inputService.TouchEnabled then
+								vim:SendTouchEvent(0, 0, cPos.X, cPos.Y)
+								vim:SendTouchEvent(0, 2, cPos.X, cPos.Y)
+							else
+								vim:SendMouseButtonEvent(cPos.X, cPos.Y, 0, true, gui, 0)
+								vim:SendMouseButtonEvent(cPos.X, cPos.Y, 0, false, gui, 0)
+							end
+
+							task.wait(0.016)
+						end
+					else
+						clickThread = nil
+						break
+					end
+				until false
+			end)
+		end
+	end
+end
+
+local function getCaller()
+	for i = 1, 7 do
+		if debug.validlevel(i) and not isexecutorclosure(debug.info(i, 'f')) then
+			return debug.info(i, 'ns')
+		end
+	end
+end
+
+local function hideStack()
+	if setstackhidden then
+		local ffunctions = {debug.info(1, 'f'), debug.info(2, 'f'), debug.info(3, 'f'), debug.info(4, 'f'), debug.info(5, 'f')}
+		for _, func in ffunctions do
+			if isexecutorclosure(func) then
+				setstackhidden(func, true)
+			end
+		end
+
+		table.clear(ffunctions)
 	end
 end
 
@@ -78,7 +154,73 @@ local function removeTags(str)
 	return (str:gsub('<[^<>]->', ''))
 end
 
+local function safeget(...)
+	local args = {...}
+	local obj = table.remove(args, 1)
+
+	for index, dir in args do
+		obj = rawget(obj, dir)
+
+		if not obj then
+			return nil
+		end
+	end
+
+	return obj
+end
+
+local function argCheck(expected, ...)
+	if select('#', ...) > #expected then
+		return false
+	end
+
+	for index, value in {...} do
+		if not table.find(expected[index], typeof(value)) then
+			return false
+		end
+	end
+
+	return true
+end
+
 run(function()
+	local function waitForChildOfType(obj, name, timeout, prop, namecheck)
+		local expireTime = os.clock() + timeout
+
+		repeat
+			local result = prop and obj[name] or obj:FindFirstChildWhichIsA(name)
+			if result and namecheck then
+				if result.Name ~= namecheck then
+					result = nil
+				end
+			end
+
+			if result then
+				return cloneref(result)
+			end
+
+			task.wait()
+		until expireTime < os.clock()
+	end
+
+	entitylib.getUpdateConnections = function(entity)
+		local hum = entity.Humanoid
+		return {
+			hum:GetPropertyChangedSignal('Health'),
+			hum:GetPropertyChangedSignal('MaxHealth'),
+			entity.Character:GetAttributeChangedSignal('Armor'),
+			{
+				Connect = function()
+					entity.Friend = entity.Player and isFriend(entity.Player) or nil
+					entity.Target = entity.Player and isTarget(entity.Player) or nil
+					return {
+						Disconnect = function() end
+					}
+				end
+			}
+		}
+	end
+
 	entitylib.targetCheck = function(entity)
 		if entity.NPC then return lplr:GetAttribute('Team') ~= entity.Character:GetAttribute('Team') end
 		if isFriend(entity.Player) then return false end
@@ -86,8 +228,63 @@ run(function()
 		return lplr:GetAttribute('Team') ~= entity.Character:GetAttribute('Team')
 	end
 
+	entitylib.isVulnerable = function(entity)
+		return entity.Health > 0 and not entity.Character:GetAttribute('Parrying') and not entity.Character.FindFirstChildWhichIsA(entity.Character, 'ForceField')
+	end
+
 	entitylib.addPlayer = function(plr)
 
+	end
+
+	entitylib.addEntity = function(char, plr, teamfunc, spawntime)
+		if not char then
+			return
+		end
+
+		entitylib.EntityThreads[char] = task.spawn(function()
+			local hum = waitForChildOfType(char, 'Humanoid', 10)
+			local humrootpart = hum and waitForChildOfType(hum, 'RootPart', workspace.StreamingEnabled and math.huge or 10, true, 'HumanoidRootPart')
+			local head = cloneref(char:WaitForChild('Head', 10) or humrootpart or workspace)
+
+			if hum and humrootpart then
+				local entity = {
+					Connections = {},
+					Character = char,
+					Health = hum.Health + (char:GetAttribute('Armor') or 0),
+					Head = head,
+					Humanoid = hum,
+					HumanoidRootPart = humrootpart,
+					HipHeight = hum.HipHeight + (humrootpart.Size.Y / 2) + (hum.RigType == Enum.HumanoidRigType.R6 and 2 or 0),
+					MaxHealth = hum.MaxHealth,
+					NPC = plr == nil,
+					Player = plr,
+					RootPart = humrootpart,
+					SpawnTime = spawntime or 0,
+					TeamCheck = teamfunc
+				}
+
+				if plr == lplr then
+					entitylib.character = entity
+					entitylib.isAlive = true
+					entitylib.Events.LocalAdded:Fire(entity)
+				else
+					entity.Targetable = entitylib.targetCheck(entity)
+
+					for _, connection in entitylib.getUpdateConnections(entity) do
+						table.insert(entity.Connections, connection:Connect(function()
+							entity.Health = hum.Health + (char:GetAttribute('Armor') or 0)
+							entity.MaxHealth = hum.MaxHealth
+							entitylib.Events.EntityUpdated:Fire(entity)
+						end))
+					end
+
+					table.insert(entitylib.List, entity)
+					entitylib.Events.EntityAdded:Fire(entity)
+				end
+			end
+
+			entitylib.EntityThreads[char] = nil
+		end)
 	end
 
 	local oldstart = entitylib.start
@@ -129,13 +326,16 @@ run(function()
 		Weapons = require(replicatedStorage.Shared.Weapons),
 		Util = require(lplr.PlayerScripts.Combat.Util),
 		UIState = require(lplr.PlayerScripts.UI.State),
-		WeaponIcon = debug.getupvalue(require(lplr.PlayerScripts.UI.WeaponIcon).Init, 5),
-		WeaponRedraw = debug.getupvalue(debug.getupvalue(debug.getupvalue(require(lplr.PlayerScripts.UI.WeaponIcon).Init, 5), 3), 8)
+		WeaponIcon = debug.getupvalue(rawget(require(lplr.PlayerScripts.UI.WeaponIcon), 'Init'), 5),
+		WeaponRedraw = debug.getupvalue(debug.getupvalue(debug.getupvalue(rawget(require(lplr.PlayerScripts.UI.WeaponIcon), 'Init'), 5), 3), 8)
 	}
 
-	tribes.State = debug.getupvalue(tribes.CombatController.State, 2)
-	tribes.Handlers = debug.getupvalue(debug.getupvalue(tribes.CombatController.Equip, 11), 10)
-	tribes.SetSpeed = debug.getupvalue(debug.getupvalue(tribes.CombatController.Equip, 11), 15)
+	local cIndex = debug.getupvalue(rawget(tribes.CombatController, 'Equip'), 11)
+	cIndex = type(cIndex) == 'function' and debug.info(cIndex, 'n') == 'refreshEquipped' and 11 or 12
+
+	tribes.State = debug.getupvalue(rawget(tribes.CombatController, 'State'), 14)
+	tribes.Handlers = debug.getupvalue(debug.getupvalue(rawget(tribes.CombatController, 'Equip'), cIndex), 10)
+	tribes.SetSpeed = debug.getupvalue(debug.getupvalue(rawget(tribes.CombatController, 'Equip'), cIndex), 15)
 
 	local kills = sessioninfo:AddItem('Kills')
 	local deaths = sessioninfo:AddItem('Deaths')
@@ -160,13 +360,21 @@ run(function()
 
 		return 'None'
 	end, false)
-	isMatch = not workspace:FindFirstChild('Lobby')
 
-	if isMatch then
-		task.delay(1, function()
-			games:Increment()
-		end)
+	local lobbyObj = workspace:FindFirstChild('Lobby')
+	if lobbyObj then
+		vape:Clean(lobbyObj.Destroying:Once(function()
+			isMatch = true
+		end))
+	else
+		isMatch = true
 	end
+
+	vape:Clean(task.delay(1, function()
+		if isMatch then
+			games:Increment()
+		end
+	end))
 
 	vape:Clean(replicatedStorage.Remotes.HitConfirm.OnClientEvent:Connect(function(data)
 		if data and data.killed and isMatch then
@@ -212,18 +420,40 @@ run(function()
 			task.wait()
 		until false
 	end))
+
+	vape:Clean(function()
+		table.clear(clickQueue)
+
+		if clickThread then
+			task.cancel(clickThread)
+			clickThread = nil
+		end
+	end)
 end)
 
 run(function()
 	local oldhitbox
+	local cmp = lplr.PlayerScripts.Combat.Handlers.Melee:GetFullName()
 
 	local function Hook(...)
-		local args = table.pack(...)
-		for _, v in HitboxHook.Hooks do
-			if v[2](args) then return end
+		hideStack()
+
+		local n, s = getCaller()
+		if not (not debug.validlevel(2) and argCheck({{'table'}, {'number'}, {'number'}, {'number'}}, ...) and n == '' and s == cmp) then
+			return oldhitbox(...)
 		end
 
-		return oldhitbox(unpack(args, 1, args.n))
+		local self = ...
+		if getrawmetatable(self) == tribes.Melee and self == tribes.State.handler and type(rawget(self, 'lastSwing')) == 'number' then
+			local args = table.pack(...)
+			for _, v in HitboxHook.Hooks do
+				if v[2](args) then return end
+			end
+
+			return oldhitbox(unpack(args, 1, args.n))
+		end
+
+		return oldhitbox(...)
 	end
 
 	function HitboxHook:Add(key, val, priority)
@@ -233,7 +463,7 @@ run(function()
 		end)
 
 		if not oldhitbox then
-			oldhitbox = hookfunction(tribes.Melee.Detect, function(...)
+			oldhitbox = hookfunction(rawget(tribes.Melee, 'Detect'), function(...)
 				return Hook(...)
 			end)
 		end
@@ -249,9 +479,9 @@ run(function()
 
 		if oldhitbox and not next(self.Hooks) then
 			if restorefunction then
-				restorefunction(tribes.Melee.Detect)
+				restorefunction(rawget(tribes.Melee, 'Detect'))
 			else
-				hookfunction(tribes.Melee.Detect, oldhitbox)
+				hookfunction(rawget(tribes.Melee, 'Detect'), oldhitbox)
 			end
 
 			oldhitbox = nil
@@ -282,6 +512,6 @@ run(function()
 	end
 end)
 
-for _, v in {'AutoClicker', 'TriggerBot', 'HitBoxes', 'Jesus', 'AutoRejoin', 'Disabler', 'MurderMystery', 'Parkour', 'Wallhop'} do
+for _, v in {'AutoClicker', 'TriggerBot', 'HitBoxes', 'Killaura', 'Jesus', 'AutoRejoin', 'Disabler', 'MurderMystery', 'Parkour', 'Wallhop'} do
 	vape:Remove(v)
 end

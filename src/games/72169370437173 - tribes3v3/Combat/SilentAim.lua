@@ -14,6 +14,28 @@ ProjectileRaycast.RespectCanCollide = true
 local Toggles = {}
 local old
 
+local valid = {
+	[lplr.PlayerScripts.Combat.Handlers.Bow:GetFullName()] = {
+		'Fire'
+	},
+	[lplr.PlayerScripts.Combat.Handlers.Gun:GetFullName()] = {
+		'Fire'
+	},
+	[lplr.PlayerScripts.Combat.Handlers.Melee:GetFullName()] = {
+		'Hurl'
+	},
+	[lplr.PlayerScripts.Combat.Handlers.Throw:GetFullName()] = {
+		'Launch'
+	}
+}
+
+local validarg = {
+	[lplr.PlayerScripts.Combat.Handlers.Bow:GetFullName()] = 'Muzzle',
+	[lplr.PlayerScripts.Combat.Handlers.Gun:GetFullName()] = 'Muzzle',
+	[lplr.PlayerScripts.Combat.Handlers.Melee:GetFullName()] = 'None',
+	[lplr.PlayerScripts.Combat.Handlers.Throw:GetFullName()] = 'Throw'
+}
+
 local function getMousePosition()
 	if inputService.TouchEnabled then
 		return gameCamera.ViewportSize / 2
@@ -23,8 +45,14 @@ local function getMousePosition()
 end
 
 local function Hook(...)
-	local handler
+	hideStack()
 
+	local n, s = getCaller()
+	if not (argCheck({{'Vector3', 'nil'}}, ...) and valid[s] and table.find(valid[s], n)) then
+		return old(...)
+	end
+
+	local handler
 	for _, obj in debug.getstack(3) do
 		if type(obj) == 'table' and rawget(obj, 'tuning') then
 			handler = obj
@@ -41,6 +69,19 @@ local function Hook(...)
 			end
 		end
 
+		local arg = ...
+		if arg then
+			if not validarg[s] then
+				return old(...)
+			elseif validarg[s] == 'Muzzle' and arg ~= tribes.Util.ShotOrigin(handler.ctx.tool, 'Muzzle') then
+				return old(...)
+			elseif validarg[s] == 'None' and arg ~= tribes.Util.ShotOrigin(nil) then
+				return old(...)
+			elseif validarg[s] == 'Throw' and arg ~= tribes.Util.ShotOrigin(handler.ctx.tool, 'Tip') and arg ~= tribes.Util.ShotOrigin(nil) then
+				return old(...)
+			end
+		end
+
 		local entity = entitylib.EntityMouse({
 			Range = Range.Value,
 			Part = Part.Value,
@@ -52,30 +93,32 @@ local function Hook(...)
 		if entity then
 			local targetPart = entity[Part.Value]
 			local origin = ... or gameCamera.CFrame.Position
-			local projSpeed = handler.tuning.speed or (handler.tuning.speedMax or 200)
-			local gravity = handler.tuning.gravity or (handler.spreadNow and 0 or 60)
+			local projSpeed = safeget(handler, 'tuning', 'speed') or (safeget(handler, 'tuning', 'speedMax') or 200)
+			local gravity = safeget(handler, 'tuning', 'gravity') or (rawget(handler, 'spreadNow') and 0 or 60)
 			ProjectileRaycast.FilterDescendantsInstances = {gameCamera, entity.Character}
 			ProjectileRaycast.CollisionGroup = targetPart.CollisionGroup
 
-			if handler.drawStart then
-				projSpeed = select(2, tribes.Combat.DrawnShot(handler.tuning, debug.getstack(3, 4)))
+			if rawget(handler, 'drawStart') then
+				projSpeed = select(2, tribes.Combat.DrawnShot(rawget(handler, 'tuning'), debug.getstack(3, 4)))
 			end
 
-			if handler.tuning.throw then
-				projSpeed = handler.tuning.throw.speed or 120
-				gravity = handler.tuning.throw.gravity or 0
+			local throw = safeget(handler, 'tuning', 'throw')
+			if throw then
+				projSpeed = rawget(throw, 'speed') or 120
+				gravity = rawget(throw, 'gravity') or 0
 			end
 
 			local calc = prediction.SolveTrajectory(origin, projSpeed, math.abs(gravity), targetPart.Position + (Part.Value == 'Head' and Vector3.new(0, 0.3, 0) or Vector3.zero), Prediction.Enabled and VelocityTracker:Get(entity.RootPart, PredictionTime.Value) or targetPart.AssemblyLinearVelocity, workspace.Gravity, entity.HipHeight, nil, ProjectileRaycast)
 			if calc then
+				local kind = rawget(handler, 'kind')
 				local lookDir = CFrame.lookAt(origin, calc).LookVector
 				targetinfo.Targets[entity] = os.clock() + 1
 
-				if handler.maxCharges then
-					return (lookDir - Vector3.new(0, ((handler.kind == 'Bomb') and 0.16) or (((handler.kind == 'Sling') and 0.05) or (((handler.kind ~= 'Javelin') and 0.01) or 0.04)), 0)).Unit
+				if rawget(handler, 'maxCharges') then
+					return (lookDir - Vector3.new(0, ((kind == 'Bomb') and 0.16) or (((kind == 'Sling') and 0.05) or (((kind ~= 'Javelin') and 0.01) or 0.04)), 0)).Unit
 				end
 
-				if handler.tuning.throw then
+				if throw then
 					local aimPoint = debug.getstack(3, 5)
 					local someMag = (aimPoint - origin).Magnitude
 
@@ -84,17 +127,17 @@ local function Hook(...)
 					end
 				end
 
-				if handler.spreadNow and handler.kind ~= 'Blunderbuss' then
+				if rawget(handler, 'spreadNow') and kind ~= 'Blunderbuss' then
 					local spread
-					if handler.kind == 'Crossbow' then
+					if kind == 'Crossbow' then
 						spread = 0
 					elseif handler:Aimed() then
-						spread = handler.tuning.spreadAim or 0
+						spread = safeget(handler, 'tuning', 'spreadAim') or 0
 					else
-						spread = handler.tuning.spreadHip or 0
+						spread = safeget(handler, 'tuning', 'spreadHip') or 0
 					end
 
-					local spreadDir = tribes.Combat.SpreadDir(lookDir, spread, handler:Seed(tribes.State.shotId + 1), 0)
+					local spreadDir = tribes.Combat.SpreadDir(lookDir, spread, handler:Seed(rawget(tribes.State, 'shotId') + 1), 0)
 					return (CFrame.lookAt(Vector3.zero, lookDir) * CFrame.lookAt(Vector3.zero, lookDir):ToObjectSpace(CFrame.lookAt(Vector3.zero, spreadDir)):Inverse()).LookVector
 				end
 
@@ -114,7 +157,13 @@ SilentAim = vape.Categories.Combat:CreateModule({
 		end
 
 		if callback then
-			old = hookfunction(tribes.Util.AimDirection, function(...)
+			if not setstackhidden then
+				notif('SilentAim', 'setstackhidden only currently.', 10, 'alert')
+				SilentAim:Toggle()
+				return
+			end
+
+			old = hookfunction(rawget(tribes.Util, 'AimDirection'), function(...)
 				return Hook(...)
 			end)
 
@@ -128,9 +177,9 @@ SilentAim = vape.Categories.Combat:CreateModule({
 		else
 			if old then
 				if restorefunction then
-					restorefunction(tribes.Util.AimDirection)
+					restorefunction(rawget(tribes.Util, 'AimDirection'))
 				else
-					hookfunction(tribes.Util.AimDirection, old)
+					hookfunction(rawget(tribes.Util, 'AimDirection'), old)
 				end
 				old = nil
 			end

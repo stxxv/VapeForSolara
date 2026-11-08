@@ -69,19 +69,27 @@ local function getTableSize(dict)
 	return size
 end
 
-local function getVehicle(entity)
+local function getVehicleSeat(entity)
 	if entity.Player then
 		for _, car in collectionService:GetTagged('Vehicle') do
 			for _, seat in car:GetChildren() do
 				if (seat.Name == 'Seat' or seat.Name == 'Passenger') then
-					seat = seat:FindFirstChild('PlayerName')
-					if seat and seat.Value == entity.Player.Name then
-						return car
+					local pname = seat:FindFirstChild('PlayerName')
+					if pname and pname.Value == entity.Player.Name then
+						return seat
 					end
 				end
 			end
 		end
 	end
+end
+
+local function getCachedEntitySeat(entity)
+	if not entity.Seat then
+		entity.Seat = getVehicleSeat(entity)
+	end
+
+	return entity.Seat
 end
 
 local function isFriend(plr, recolor)
@@ -354,7 +362,10 @@ run(function()
 
 	entitylib.getUpdateConnections = function(entity)
 		local hum = entity.Humanoid
-		entity.InVehicle = not entity.Character:GetAttribute('HasHandcuffs') and (entity.Character:GetAttribute('InVehicle') or entity.InVehicle)
+		local isInVehicle = entity.Character:GetAttribute('InVehicle')
+		entity.Seat = isInVehicle and entity.Seat or nil
+		entity.VehicleState = isInVehicle
+		entity.InVehicle = not entity.Character:GetAttribute('HasHandcuffs') and (isInVehicle or entity.InVehicle)
 		entity.Illegal = isIllegal(entity, true)
 
 		return {
@@ -696,10 +707,11 @@ run(function()
 		lplr.PlayerScripts.LocalScript
 	}, {
 		Action3 = 'Pickup',
-		AttemptArrest = 'Arrest',
+		beginArrestHold = 'ArrestBegin',
+		finishArrestHold = 'ArrestEnd',
 		attemptPunch = 'Punch',
 		AttemptPickPocket = 'Pickpocket',
-		AttemptVehicleEject = 'Eject',
+		ejectVehicleOccupant = 'Eject',
 		AttemptVehicleEnter = 'GetIn',
 		BroadcastInputBegan = 'InputBegan',
 		BroadcastInputEnded = 'InputEnded',
@@ -708,8 +720,9 @@ run(function()
 		Gun = 'PopTires',
 		GunShopUI = 'UnequipItem',
 		GunShopUI1 = 'EquipItem',
-		LocalScript2 = 'LookAngle',
+		LocalScript4 = 'LookAngle',
 		LocalScript = 'SelfDamage',
+		LocalScript2 = '',
 		onPressed = 'FlipVehicle',
 		OnJump = 'GetOut',
 		OnJump1 = 'GetOut',
@@ -817,10 +830,7 @@ run(function()
 
 	vape:Clean(entitylib.Events.EntityUpdated:Connect(function(entity)
 		local isInVehicle = entity.Character:GetAttribute('InVehicle')
-		if entity.VehicleState ~= isInVehicle and not isInVehicle then
-			entity.VehicleTimer = os.clock() + 0.3
-		end
-
+		entity.Seat = isInVehicle and entity.Seat or nil
 		entity.VehicleState = isInVehicle
 		entity.InVehicle = not entity.Character:GetAttribute('HasHandcuffs') and (isInVehicle or entity.InVehicle)
 		entity.Illegal = isIllegal(entity, true)
@@ -831,6 +841,18 @@ run(function()
 	end))
 
 	vape:Clean(entitylib.Events.LocalAdded:Connect(updateVelocity))
+
+	vape:Clean(task.spawn(function()
+		repeat
+			for _, entity in entitylib.List do
+				if entity.Character:GetAttribute('InVehicle') then
+					entity.VehicleTimer = os.clock() + 0.5
+				end
+			end
+
+			task.wait(0.05)
+		until false
+	end))
 
 	vape:Clean(function()
 		table.clear(remotes)

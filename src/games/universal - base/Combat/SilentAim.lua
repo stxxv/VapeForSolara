@@ -5,6 +5,7 @@ run(function()
 	local Mode
 	local Method
 	local RayMethod
+	local SchedulerPriority
 	local IgnoredScripts
 	local Range
 	local HitChance
@@ -30,8 +31,8 @@ run(function()
 	local oldnamecall, oldhook, hookmethod
 	local rand = Random.new()
 	local clickDelay = os.clock()
+	local fireOffset = CFrame.new()
 	local didOth
-	local fireOffset
 
 	local function getMousePosition()
 		if inputService.TouchEnabled then
@@ -211,44 +212,67 @@ run(function()
 			end
 
 			if callback then
-				hookmethod = Hooks[Method.Value]
-				didOth = OthHook.Enabled
-
-				if FunctionHook.Enabled or hookmethod.NoNamecall then
-					oldhook = (OthHook.Enabled and oth.hook or hookfunction)(hookmethod.Hook, function(...)
-						if checkcaller() then
-							return oldhook(...)
+				if Method.Value == 'TaskScheduler' then
+					local old
+					SilentAim:Clean(runService.PostSimulation:Connect(function()
+						local entity, targetPart = getTarget(gameCamera.CFrame.Position)
+						if entity then
+							old = gameCamera.CFrame
+							gameCamera.CFrame = CFrame.lookAt(gameCamera.CFrame.Position, targetPart.Position)
 						end
+					end))
 
-						local caller = getcallingscript()
-						if typeof(caller) == 'Instance' and caller then
-							if table.find(IgnoredScripts.ListEnabled, tostring(caller)) then
-								return oldnamecall(...)
-							end
-						end
-
-						if hookmethod.NoNamecall then
-							local args = {...}
-							local data = hookmethod.Function(args)
-							if data then
-								return unpack(data)
-							end
-
-							return oldhook(unpack(args))
-						else
-							local self, args = ..., {select(2, ...)}
-							local data = hookmethod.Function(args)
-							if data then
-								return unpack(data)
-							end
-
-							return oldhook(self, unpack(args))
+					local key = httpService:GenerateGUID(false)
+					runService:BindToRenderStep(key, SchedulerPriority.Value, function()
+						if old then
+							gameCamera.CFrame = old
+							old = nil
 						end
 					end)
-				end
 
-				if not hookmethod.NoNamecall then
-					oldnamecall = OthHook.Enabled and oth.hook(getrawmetatable(game).__namecall, namecallHook) or hookmetamethod(game, '__namecall', namecallHook)
+					SilentAim:Clean(function()
+						runService:UnbindFromRenderStep(key)
+					end)
+				else
+					hookmethod = Hooks[Method.Value]
+					didOth = OthHook.Enabled
+
+					if FunctionHook.Enabled or hookmethod.NoNamecall then
+						oldhook = (OthHook.Enabled and oth.hook or hookfunction)(hookmethod.Hook, function(...)
+							if checkcaller() then
+								return oldhook(...)
+							end
+
+							local caller = getcallingscript()
+							if typeof(caller) == 'Instance' and caller then
+								if table.find(IgnoredScripts.ListEnabled, tostring(caller)) then
+									return oldnamecall(...)
+								end
+							end
+
+							if hookmethod.NoNamecall then
+								local args = {...}
+								local data = hookmethod.Function(args)
+								if data then
+									return unpack(data)
+								end
+
+								return oldhook(unpack(args))
+							else
+								local self, args = ..., {select(2, ...)}
+								local data = hookmethod.Function(args)
+								if data then
+									return unpack(data)
+								end
+
+								return oldhook(self, unpack(args))
+							end
+						end)
+					end
+
+					if not hookmethod.NoNamecall then
+						oldnamecall = OthHook.Enabled and oth.hook(getrawmetatable(game).__namecall, namecallHook) or hookmetamethod(game, '__namecall', namecallHook)
+					end
 				end
 			else
 				if oldhook then
@@ -323,7 +347,7 @@ run(function()
 	})
 	Method = SilentAim:CreateDropdown({
 		Name = 'Method',
-		List = {'FindPartOnRay', 'FindPartOnRayWithIgnoreList', 'FindPartOnRayWithWhitelist', 'ScreenPointToRay', 'ViewportPointToRay', 'Raycast', 'Ray'},
+		List = {'FindPartOnRay', 'FindPartOnRayWithIgnoreList', 'FindPartOnRayWithWhitelist', 'ScreenPointToRay', 'ViewportPointToRay', 'Raycast', 'Ray', 'TaskScheduler'},
 		Function = function(val)
 			if SilentAim.Enabled then
 				SilentAim:Toggle()
@@ -331,6 +355,8 @@ run(function()
 			end
 
 			RayMethod.Object.Visible = val == 'Raycast'
+			IgnoredScripts.Object.Visible = val ~= 'TaskScheduler'
+			SchedulerPriority.Object.Visible = val == 'TaskScheduler'
 		end,
 		Tooltip = 'FindPartOnRay* - Deprecated methods of raycasting used in old games\nRaycast - The modern raycast method\n*PointToRay - Method to generate a ray from a screen position\nRay - Used in old games'
 	})
@@ -371,6 +397,21 @@ run(function()
 		Max = 100,
 		Default = 65,
 		Suffix = '%'
+	})
+	SchedulerPriority = SilentAim:CreateSlider({
+		Name = 'Scheduler Priority',
+		Min = -5,
+		Max = 5,
+		Default = 0,
+		Function = function()
+			if SilentAim.Enabled then
+				SilentAim:Toggle()
+				SilentAim:Toggle()
+			end
+		end,
+		Darker = true,
+		Visible = false,
+		Tooltip = 'Adjust the RenderStepped priority for TaskScheduler, only adjust this if you know what you are doing!'
 	})
 	AutoFire = SilentAim:CreateToggle({
 		Name = 'AutoFire',

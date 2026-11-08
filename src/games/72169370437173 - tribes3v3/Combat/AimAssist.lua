@@ -7,13 +7,28 @@ local AngleSlider
 local StrafeIncrease
 local Vertical
 local ClickAim
+<<<<<<< HEAD
+=======
+local moveConst = Vector2.new(1, 0.77) * math.rad(0.5)
+
+local function wrapAngle(num)
+	return (num + math.pi % math.tau) - math.pi
+end
+>>>>>>> upstream/main
 
 AimAssist = vape.Categories.Combat:CreateModule({
 	Name = 'AimAssist',
 	Function = function(callback)
 		if callback then
 			AimAssist:Clean(runService.Heartbeat:Connect(function(dt)
+<<<<<<< HEAD
 				if entitylib.isAlive and tribes.State.handler and tribes.State.handler.lastSwing and ((not ClickAim.Enabled) or (os.clock() - (tribes.State.handler.lastSwing or 0)) < 0.5) then
+=======
+				local lastSwing = entitylib.isAlive and rawget(tribes.State, 'handler')
+				lastSwing = lastSwing and rawget(lastSwing, 'lastSwing') or nil
+
+				if lastSwing and ((not ClickAim.Enabled) or (os.clock() - (lastSwing or 0)) < 0.5) then
+>>>>>>> upstream/main
 					local entity = entitylib.EntityPosition({
 						Range = Distance.Value,
 						Part = 'RootPart',
@@ -22,14 +37,28 @@ AimAssist = vape.Categories.Combat:CreateModule({
 						NPCs = Targets.NPCs.Enabled
 					})
 
+<<<<<<< HEAD
 					if entity then
+=======
+					if entity and inputService.MouseBehavior == Enum.MouseBehavior.LockCenter and not (guiService.MenuIsOpen or vape.gui.ScaledGui.ClickGui.Visible) then
+>>>>>>> upstream/main
 						local delta = (entity.RootPart.Position - entitylib.character.RootPart.Position)
 						local localfacing = entitylib.character.RootPart.CFrame.LookVector * Vector3.new(1, 0, 1)
 						local angle = math.acos(localfacing:Dot((delta * Vector3.new(1, 0, 1)).Unit))
 						if angle >= (math.rad(AngleSlider.Value) / 2) then return end
 						targetinfo.Targets[entity] = os.clock() + 1
+<<<<<<< HEAD
 						local lerped = gameCamera.CFrame:Lerp(CFrame.lookAt(gameCamera.CFrame.Position, entity.RootPart.Position), (AimSpeed.Value + (StrafeIncrease.Enabled and (inputService:IsKeyDown(Enum.KeyCode.A) or inputService:IsKeyDown(Enum.KeyCode.D)) and 10 or 0)) * dt).LookVector
 						tribes.Camera.SetLook(math.atan2(-lerped.X, -lerped.Z), Vertical.Enabled and math.asin(lerped.Y) or nil)
+=======
+
+						local facing = gameCamera.CFrame.LookVector
+						local lerped = gameCamera.CFrame:Lerp(CFrame.lookAt(gameCamera.CFrame.Position, entity.RootPart.Position), (AimSpeed.Value + (StrafeIncrease.Enabled and (inputService:IsKeyDown(Enum.KeyCode.A) or inputService:IsKeyDown(Enum.KeyCode.D)) and 10 or 0)) * dt).LookVector
+						local diffYaw = wrapAngle(math.atan2(facing.X, facing.Z) - math.atan2(lerped.X, lerped.Z))
+						local diffPitch = math.asin(facing.Y) - math.asin(lerped.Y)
+						local angle = Vector2.new(diffYaw, diffPitch) // (moveConst * UserSettings():GetService('UserGameSettings').MouseSensitivity)
+						vim:SendMouseMoveDeltaEvent(angle.X, Vertical.Enabled and angle.Y or 0, nil)
+>>>>>>> upstream/main
 					end
 				end
 			end))

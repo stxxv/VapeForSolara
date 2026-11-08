@@ -111,7 +111,18 @@ local Added = {
 					Icon.Size = UDim2.fromOffset(30, 30)
 					Icon.Parent = workspace
 
-					tribes.WeaponIcon(Icon, {id = item, opts = {glow = false, outline = false}})
+					if setstackhidden then
+						local ffunctions = {debug.info(1, 'f'), debug.info(2, 'f'), debug.info(3, 'f'), debug.info(4, 'f'), debug.info(5, 'f')}
+						for _, func in ffunctions do
+							if isexecutorclosure(func) and setstackhidden then
+								setstackhidden(func, true)
+							end
+						end
+
+						table.clear(ffunctions)
+						tribes.WeaponIcon(Icon, {id = item, opts = {glow = false, outline = false}})
+					end
+
 					task.defer(function()
 						Icon.Parent = holder
 					end)
