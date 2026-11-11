@@ -32,8 +32,29 @@ run(function()
 	local AttackRemote, AttackDelay = {FireServer = function() end}, {}
 
 	local buffered, Buffer = {}
+	local pingHistory = {}
+	local pingIdx = 1
+	local PING_SAMPLES = 5
+
+	-- smoothed ping: averages the last few samples so a single frame spike doesn't
+	-- destabilize hit registration or prediction. rapid jitter is dampened while
+	-- sustained latency changes still track within a couple of ticks.
+	local function getSmoothedPing()
+		local raw = lplr:GetNetworkPing()
+		pingHistory[pingIdx] = raw
+		pingIdx = pingIdx % PING_SAMPLES + 1
+		local sum, count = 0, 0
+		for _, p in ipairs(pingHistory) do
+			if p then
+				sum = sum + p
+				count = count + 1
+			end
+		end
+		return count > 0 and (sum / count) or raw
+	end
+
 	local function getPingMultiplier()
-		return math.clamp(0.4 - math.min(lplr:GetNetworkPing() * 0.5, 0.4 * 0.35), 0.05, 0.4)
+		return math.clamp(0.4 - math.min(getSmoothedPing() * 0.5, 0.4 * 0.35), 0.05, 0.4)
 	end
 
 	task.spawn(function()
@@ -70,7 +91,8 @@ run(function()
 		end
 
 		local base = meta.sword.attackSpeed
-		local raw = math.clamp(base - math.min(math.clamp(lplr:GetNetworkPing(), 0, 1) * 0.5, base * 0.35), 0.05, 2)
+		local ping = math.clamp(getSmoothedPing(), 0, 1)
+		local raw = math.clamp(base - math.min(ping * 0.5, base * 0.35), 0.05, 2)
 
 		return math.clamp(raw, 0.05, 2)
 	end
@@ -214,8 +236,11 @@ run(function()
 									end
 
 									if os.clock() >= AttackDelay[v].Attack then
-										local dir = CFrame.lookAt(selfpos, actualRoot.Position).LookVector
-										local pos = selfpos + dir * math.max(delta.Magnitude - 14.399, 0)
+										local pingSec = getSmoothedPing() / 1000
+										local targetVel = actualRoot.AssemblyLinearVelocity
+										local predictedPos = actualRoot.Position + (targetVel and targetVel or Vector3.zero) * pingSec
+										local dir = CFrame.lookAt(selfpos, predictedPos).LookVector
+										local pos = selfpos + dir * math.max((predictedPos - selfpos).Magnitude - 14.399, 0)
 										bedwars.SwordController.lastAttack = workspace:GetServerTimeNow()
 										store.attackReach = (delta.Magnitude * 100) // 1 / 100
 										store.attackReachUpdate = tick() + 1
@@ -234,7 +259,7 @@ run(function()
 													cameraPosition = {value = pos},
 													cursorDirection = {value = dir}
 												},
-												targetPosition = {value = actualRoot.Position},
+												targetPosition = {value = predictedPos},
 												selfPosition = {value = pos}
 											}
 										})
@@ -243,8 +268,11 @@ run(function()
 										task.delay(AttackDelay[v].Attack - os.clock(), function()
 											buffered[v] = nil
 											if os.clock() >= AttackDelay[v].Attack then
-												local dir = CFrame.lookAt(selfpos, actualRoot.Position).LookVector
-												local pos = selfpos + dir * math.max(delta.Magnitude - 14.399, 0)
+												local pingSec = getSmoothedPing() / 1000
+												local targetVel = actualRoot.AssemblyLinearVelocity
+												local predictedPos = actualRoot.Position + (targetVel and targetVel or Vector3.zero) * pingSec
+												local dir = CFrame.lookAt(selfpos, predictedPos).LookVector
+												local pos = selfpos + dir * math.max((predictedPos - selfpos).Magnitude - 14.399, 0)
 												bedwars.SwordController.lastAttack = workspace:GetServerTimeNow()
 												store.attackReach = (delta.Magnitude * 100) // 1 / 100
 												store.attackReachUpdate = tick() + 1
@@ -263,7 +291,7 @@ run(function()
 															cameraPosition = {value = pos},
 															cursorDirection = {value = dir}
 														},
-														targetPosition = {value = actualRoot.Position},
+														targetPosition = {value = predictedPos},
 														selfPosition = {value = pos}
 													}
 												})

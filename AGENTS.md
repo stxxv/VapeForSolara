@@ -174,6 +174,12 @@ Regenerate that file with `compiler.lua` running in a live match; it is large (~
 - One break swing at a time. `bedwars.breakBlock` is called at the module's update rate, so a
   fresh animation track per call stacks up and the arm keeps swinging after the target leaves
   range; the emulation keeps a single swing and stops both the player and the viewmodel track.
+- **Breaker target scanning is gated by the break cooldown.** The old `attemptBreak` looped over
+  every candidate block (beds, custom, lucky blocks, iron ore) on every tick and called
+  `breakBlock` — which runs Dijkstra pathfinding — even while on cooldown. Breaker now tracks a
+  `nextBreakTime` and only scans categories when a break can actually fire, using one combined
+  pass that preserves the bed → custom → lucky → iron ore priority order. Visual parts are still
+  reset every tick so the highlight adornments don't linger.
 - `getPlacedBlock(pos)` (base.lua) is the module-facing wrapper: it takes a **world** position
   and returns `(instance, gridPosition)`. `sides` holds the six `Enum.NormalId * 3` world
   offsets, so `calculatePath` keys its maps in world space and hands back world positions.
@@ -387,6 +393,13 @@ therefore:
   `pcall`ed. A global rate floor (`canPlaceNow`, 0.05 s) existed once and was removed on purpose;
   do not re-add it, it halved Scaffold's rate. AutoClicker paces itself against the server's
   12 CPS cap (`lastPlaceTimestamp`, full `1 / 12` interval).
+- **`bedwars.placeBlock` caches `getItem` lookups** (`_placeBlockItemName`/`_placeBlockItemData`).
+  Scaffold places the same block repeatedly, so the inventory scan on every placement call was
+  redundant overhead. The cache invalidates when the item name changes.
+- **`calculatePath` Dijkstra no longer uses `table.remove(unvisited, 1)`** (O(n) per pop). It now
+  scans for the lowest-cost node and swaps-with-last to remove, keeping pathfinding correct while
+  avoiding quadratic behavior on large open areas. This directly improves Breaker responsiveness
+  on the emulated path.
 - **Remote shapes differ.** `PlaceBlock` and `DamageBlock` are `RemoteFunction`s
   (`CallServer` → `InvokeServer`, and the result comes back directly — do not chain `:andThen`
   on it); `SwordHit`, `SwordSwingMiss` and the rest are `RemoteEvent`s. A placement is sent as
@@ -427,3 +440,17 @@ therefore:
   `CreateToggle` calls further down the file; a saved-state Load or a toggle that lands early
   throws `attempt to index nil with 'Enabled'` (built line ~7776). Known, unfixed — if it is
   ever fixed, gate the ce branch on the toggle locals being set, not on `pcall`.
+
+## Killaura prediction & hit registration (2026-11-11)
+
+- **Ping smoothing.** Killaura hit registration and hit buffering now read `getSmoothedPing()` — a
+  rolling average of the last 5 `GetNetworkPing()` samples — instead of the raw instantaneous
+  value. This damps single-frame ping spikes so `calcHitreg` and the Buffer hit threshold don't
+  overreact to jitter, while sustained latency changes still track within a couple of ticks.
+- **Velocity-based target prediction.** Both the immediate attack and the buffered hit path now
+  lead the target by `smoothedPing / 1000` seconds of `AssemblyLinearVelocity` before computing
+  the attack ray and `targetPosition`. Stationary targets are unaffected; moving targets are
+  hit more consistently across ping levels because the aim point accounts for where the target
+  will be when the hit packet arrives.
+- `targetPosition` in the `AttackEntity` validate payload now uses the predicted position rather
+  than the raw current position, keeping client and server hit registration aligned.
