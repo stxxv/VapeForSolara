@@ -33,7 +33,7 @@ run(function()
 
 	local buffered, Buffer = {}
 	local function getPingMultiplier()
-		return 0.4 * (100 / (100 + lplr:GetNetworkPing() * 1000))
+		return math.clamp(0.4 - math.min(lplr:GetNetworkPing() * 0.5, 0.4 * 0.35), 0.05, 0.4)
 	end
 
 	task.spawn(function()
@@ -329,7 +329,12 @@ run(function()
 		Name = 'Hitreg',
 		List = {'Dynamic', 'Static'},
 		Function = function(callback)
-			Buffer:Set((callback == 'Dynamic' and true) or false)
+			if Buffer.Enabled and callback ~= 'Dynamic' then
+				Buffer:Toggle()
+			elseif not Buffer.Enabled and callback == 'Dynamic' then
+				Buffer:Toggle()
+			end
+			
 			Buffer.Object.Visible = (callback == 'Dynamic' and true) or false
 		end,
 		Tooltip = 'Dynamic - Automatically uses your ping and sword cooldown to get the best hitreg.\nStatic - Uses your sword cooldown for a consistent hitreg.'
