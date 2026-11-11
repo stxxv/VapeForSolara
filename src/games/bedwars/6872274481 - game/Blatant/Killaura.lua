@@ -31,10 +31,9 @@ run(function()
 	local oldVMIsVisible, oldVMPlayAnimation
 	local AttackRemote, AttackDelay = {FireServer = function() end}, {}
 
-	local BUFFER_MULT, buffered = 0.4, {}
-	local function bufferWindow(meta)
-		local base = (meta and meta.sword) and meta.sword.attackSpeed or 0.3
-		return math.min(base * 0.4, 0.2)
+	local buffered = {}
+	local function getPingMultiplier()
+		return 0.4 * (100 / (100 + lplr:GetNetworkPing() * 1000))
 	end
 
 	task.spawn(function()
@@ -239,7 +238,7 @@ run(function()
 												selfPosition = {value = pos}
 											}
 										})
-									elseif AttackDelay[v].Attack - os.clock() <= bufferWindow(meta) and not buffered[v] then
+									elseif AttackDelay[v].Attack - os.clock() <= math.min(meta.sword.attackSpeed * getPingMultiplier(), 0.2) and not buffered[v] then
 										buffered[v] = true
 										task.delay(AttackDelay[v].Attack - os.clock(), function()
 											buffered[v] = nil
