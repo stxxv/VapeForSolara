@@ -32,24 +32,21 @@ run(function()
 	local AttackRemote, AttackDelay = {FireServer = function() end}, {}
 
 	local buffered, Buffer = {}
-	local pingHistory = {}
-	local pingIdx = 1
-	local PING_SAMPLES = 5
+	local pingHistory, pingIdx = {}, 1
 
-	-- smoothed ping: averages the last few samples so a single frame spike doesn't
-	-- destabilize hit registration or prediction. rapid jitter is dampened while
-	-- sustained latency changes still track within a couple of ticks.
 	local function getSmoothedPing()
 		local raw = lplr:GetNetworkPing()
 		pingHistory[pingIdx] = raw
-		pingIdx = pingIdx % PING_SAMPLES + 1
+		pingIdx = pingIdx % 5 + 1
+
 		local sum, count = 0, 0
-		for _, p in ipairs(pingHistory) do
-			if p then
-				sum = sum + p
+		for _, v in ipairs(pingHistory) do
+			if v then
+				sum = sum + v
 				count = count + 1
 			end
 		end
+		
 		return count > 0 and (sum / count) or raw
 	end
 
@@ -92,7 +89,7 @@ run(function()
 
 		local base = meta.sword.attackSpeed
 		local ping = math.clamp(getSmoothedPing(), 0, 1)
-		local raw = math.clamp(base - math.min(ping * 0.5, base * 0.35), 0.05, 2)
+		local raw = math.clamp(base - math.min(ping * 1.5, base * 0.35), 0.05, 2)
 
 		return math.clamp(raw, 0.05, 2)
 	end
@@ -371,7 +368,7 @@ run(function()
 			
 			Buffer.Object.Visible = (callback == 'Dynamic' and true) or false
 		end,
-		Tooltip = 'Dynamic - Automatically uses your ping and sword cooldown to get the best hitreg.\nStatic - Uses your sword cooldown for a consistent hitreg.'
+		Tooltip = 'Dynamic - Automatically uses your ping and sword cooldown to get the best hitreg (depends on FPS and ping).\nStatic - Uses your sword cooldown for a consistent hitreg of 33 to 34 hits per second.'
 	})
 	Buffer = Killaura:CreateToggle({
 		Name = 'Buffer hits',

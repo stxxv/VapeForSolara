@@ -35,7 +35,7 @@ local uipallet = vape.Libraries.uipallet
 local tween = vape.Libraries.tween
 local color = vape.Libraries.color
 local whitelist = vape.Libraries.whitelist
-local prediction
+local prediction = vape.Libraries.prediction
 local getfontbounds = vape.Libraries.getfontbounds
 local getvapeasset = vape.Libraries.getvapeasset
 
@@ -711,10 +711,6 @@ run(function()
 
 	local construct = loadstring(downloadFile('newvape/libraries/bedwars/game/construct.lua'))()
 	repeat task.wait() until construct ~= nil and construct.loaded
-
-	prediction = loadstring(downloadFile('newvape/libraries/bedwars/game/prediction.lua'))()
-	repeat task.wait() until prediction ~= nil and prediction.SolveTrajectory
-	vape.Libraries.prediction = prediction
 end)
 
 for _, v in {'AntiRagdoll', 'TriggerBot', 'SilentAim', 'AutoRejoin', 'Rejoin', 'Disabler', 'Timer', 'ServerHop', 'MouseTP', 'MurderMystery', 'Invisible', 'Swim', 'Reach', 'Wallhop'} do

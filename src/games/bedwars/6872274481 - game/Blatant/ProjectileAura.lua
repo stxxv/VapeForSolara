@@ -57,7 +57,7 @@ ProjectileAura = vape.Categories.Blatant:CreateModule({
 								rayCheck.FilterDescendantsInstances = {workspace.Map}
 								local meta = bedwars.ProjectileMeta[projectile]
 								local projSpeed, gravity = meta.launchVelocity, meta.gravitationalAcceleration or 196.2
-								local calc = prediction.SolveTrajectory(pos, projSpeed, gravity, ent.RootPart.Position, ent.RootPart.Velocity, workspace.Gravity, ent.HipHeight, ent.Jumping and 42.6 or nil, rayCheck, Vector3.zero, lplr:GetNetworkPing())
+								local calc = prediction.SolveTrajectory(pos, projSpeed, gravity, ent.RootPart.Position, ent.RootPart.Velocity, workspace.Gravity, ent.HipHeight, ent.Jumping and 42.6 or nil, rayCheck)
 								if calc then
 									targetinfo.Targets[ent] = os.clock() + 1
 									local switched = switchItem(item.tool)
